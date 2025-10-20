@@ -1,0 +1,8 @@
+- In general
+	- Docker dev(elopment) containers need to be opened in Microsoft Visual Studio code
+	- Docker dev containers are a newer iteration of docker containers specific to software engineering
+		- Instead of opening a docker container with MS VS code every time a team wants to develop - dev containers will open auto in env
+	- You can select "Reopen Folder Locally" if you do not want to open a VSCode window with a devcontainer activated
+
+- Next steps
+	- We will connect this devcontainer to a postgresql database
