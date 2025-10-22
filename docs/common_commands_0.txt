@@ -1,4 +1,10 @@
-cd /Users/josephhiggins/Documents/siads-699/postgres && docker build . -f Dockerfile
+# Docker commands
 yes | docker system prune -a
 docker kill $(docker ps -q)
 docker compose up --build
+
+# Postgres commands
+docker exec -it <id> bash
+psql -U postgres
+CREATE DATABASE mytest;
+\dt
