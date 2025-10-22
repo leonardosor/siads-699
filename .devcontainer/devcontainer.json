@@ -29,5 +29,5 @@
 	// Other settings.json values you want to set. More info: https://aka.ms/vscode-remote/devcontainer.json#settings.
 	"dockerComposeFile": "docker-compose.yml",
     "service": "devcontainer",
-    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
+    "workspaceFolder": "${localWorkspaceFolderBasename}"
 }
