@@ -9,12 +9,17 @@ services:
   db:
     image: postgres:latest
     restart: unless-stopped
+    expose:
+      - "5432" # Publishes 5432 to other containers but NOT to host machine
+    ports:
+      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
       POSTGRES_DB: postgres
+    command: -p 5432
 
 volumes:
   postgres-data:

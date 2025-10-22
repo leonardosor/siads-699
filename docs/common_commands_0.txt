@@ -1,2 +1,4 @@
 cd /Users/josephhiggins/Documents/siads-699/postgres && docker build . -f Dockerfile
-docker system prune -a
+yes | docker system prune -a
+docker kill $(docker ps -q)
+docker compose up --build
