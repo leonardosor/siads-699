@@ -8,9 +8,9 @@ services:
     container_name: pdf-ocr-devcontainer
     volumes:
       # Mount project directory
-      - ..:/workspace:cached
+    - ..:/workspace:cached
       # Persist command history
-      - devcontainer-bashhistory:/commandhistory
+    - devcontainer-bashhistory:/commandhistory
     # Connect to database network
     depends_on:
       db:
@@ -22,14 +22,14 @@ services:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
     environment:
-      - PYTHONPATH=/workspace
-      - TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata
-      - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
-      - HISTFILE=/commandhistory/.bash_history
+    - PYTHONPATH=/workspace
+    - TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata
+    - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+    - HISTFILE=/commandhistory/.bash_history
     # Keep container running for VS Code
     command: sleep infinity
     stdin_open: true
@@ -39,11 +39,11 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     expose:
-      - "5432"
+    - '5432'
     ports:
-      - "5432:5432"
+    - 5432:5432
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+    - postgres-data:/var/lib/postgresql/data
       # Optional: Add init scripts
       # - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
@@ -51,7 +51,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [CMD-SHELL, pg_isready -U postgres]
       interval: 10s
       timeout: 5s
       retries: 5
