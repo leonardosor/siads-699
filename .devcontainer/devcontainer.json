@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // For format details, see https://aka.ms/devcontainer.json
 {
 	"name": "PDF OCR & CNN Training",
@@ -146,4 +147,38 @@
 	"mounts": [
 		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
 	]
+=======
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+	"name": "Python 3",
+
+	// Sets the description for the dev container
+	"description": "Development container for SIADS 699 Capstone Project",
+
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "sudo pip3 install --user -r requirements.txt",
+	"postCreateCommand": "sudo apt-get update && sudo apt-get install tesseract-ocr",
+	"postCreateCommand": "sudo apt-get update && sudo apt-get install vim",
+
+	// Configure tool-specific properties.
+	// "customizations": {},
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	"remoteUser": "root",
+
+	// Other settings.json values you want to set. More info: https://aka.ms/vscode-remote/devcontainer.json#settings.
+	"dockerComposeFile": "docker-compose.yml",
+    "service": "devcontainer",
+    "workspaceFolder": "${localWorkspaceFolderBasename}"
+>>>>>>> 34b07649524b3c62462ec23cbde7625f5674031c
 }
