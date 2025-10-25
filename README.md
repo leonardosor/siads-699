@@ -19,10 +19,18 @@ We are attempting to build a state of the art, full stack, text extraction appli
 ```
 
 ### Data
-    - [Google Drive](https://drive.google.com/drive/folders/1ibqk_GzowWrwybOqg8wA88Q95gKQnrM1?usp=share_link)
+- [Google Drive][1]
 
 ### Documentation
-    - [rvl-cdip-invoice](https://huggingface.co/datasets/chainyo/rvl-cdip-invoice)
-    - [HuggingFace Co-Lab](https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/videos/save_load_dataset.ipynb#scrollTo=091FrwQDXQiM)
-    - [Yolov8](https://arxiv.org/html/2408.15857)
-    - [Tesseract 5](https://tesseract-ocr.github.io/tessdoc/)
+- [rvl-cdip-invoice][2]
+- [HuggingFace Co-Lab][3]
+- [Yolov8][4]
+- [Tesseract 5][5]
+
+
+
+[1]: https://drive.google.com/drive/folders/1ibqk_GzowWrwybOqg8wA88Q95gKQnrM1?usp=share_link
+[2]: https://huggingface.co/datasets/chainyo/rvl-cdip-invoice
+[3]: https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/videos/save_load_dataset.ipynb#scrollTo=091FrwQDXQiM
+[4]: https://arxiv.org/html/2408.15857
+[5]: https://tesseract-ocr.github.io/tessdoc/
