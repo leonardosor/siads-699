@@ -4,13 +4,16 @@
 ### Overview
 We are attempting to build a state of the art, full stack, text extraction application that performs on scanned images of forms. Our application's architecture will include manually labelled (Label Studio) training images (PNG, JPEG, PDFs) with bounded boxes of "header", "body" and "footer" text. This data will be used to fine tune a convolutional neural network (Yolov8). Our application will then extract text only from the body of forms (Tesseract 5). This extracted data will be stored in a relational database (postgreSQL). Our application will ultimately follow a micro-services pattern, implemented with Docker, and tied together in a web application front-end (Streamlit).
 
-### Setup
+### Repository Architecture
 ```{bash}
 .
+├── .devcontainer
 ├── data
 │   ├── input
 │   │   ├── ground-truth
-│   │   └── training
+│   │   ├── testing
+│   │   ├── training
+│   │   └── validation
 │   └── output
 ├── docs
 └── src
@@ -26,8 +29,6 @@ We are attempting to build a state of the art, full stack, text extraction appli
 - [HuggingFace Co-Lab][3]
 - [Yolov8][4]
 - [Tesseract 5][5]
-
-
 
 [1]: https://drive.google.com/drive/folders/1ibqk_GzowWrwybOqg8wA88Q95gKQnrM1?usp=share_link
 [2]: https://huggingface.co/datasets/chainyo/rvl-cdip-invoice
