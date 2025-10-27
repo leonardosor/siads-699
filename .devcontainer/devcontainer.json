@@ -42,7 +42,7 @@
 		}
 	},
 	// Commands to run after container is created
-	"postCreateCommand": "pip install --no-cache-dir -e . 2>/dev/null || echo 'No setup.py found, skipping editable install' && apt-get update && yes | apt install python3-pip && yes | apt install python3.13-venv && bash src/install_0.sh",
+	"postCreateCommand": "pip install --no-cache-dir -e . 2>/dev/null || echo 'No setup.py found, skipping editable install' && apt-get update && yes | apt install python3-pip && yes | apt install python3.13-venv && bash src/docker/install_0.sh",
 	// VS Code customizations
 	"customizations": {
 		"vscode": {
