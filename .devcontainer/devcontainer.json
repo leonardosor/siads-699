@@ -7,7 +7,10 @@
 	"dockerComposeFile": "../src/docker/docker-compose.yml",
 	"service": "devcontainer",
 	"workspaceFolder": "/workspace",
-	"workspaceMount": "source=${localWorkspaceFolder}/../..,target=/workspace,type=bind", // Written by ChatGPT
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+	"mounts": [
+  		"source=${localWorkspaceFolder}/data,target=/workspace/data,type=volume"
+	],
 	// Features to add to the dev container
 	"features": {
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {
@@ -42,7 +45,7 @@
 		}
 	},
 	// Commands to run after container is created
-	"postCreateCommand": "pip install --no-cache-dir -e . 2>/dev/null || echo 'No setup.py found, skipping editable install' && apt-get update && yes | apt install python3-pip && yes | apt install python3.13-venv && bash src/docker/install_0.sh",
+	// "postCreateCommand": "pip install --no-cache-dir -e . 2>/dev/null",
 	// VS Code customizations
 	"customizations": {
 		"vscode": {
