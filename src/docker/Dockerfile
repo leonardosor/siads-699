@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libtesseract-dev \
     poppler-utils \
     libpq-dev \
- && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt install vim
 
 # Optional: prevent pip cache buildup
 ENV PIP_NO_CACHE_DIR=1
