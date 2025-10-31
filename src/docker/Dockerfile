@@ -1,12 +1,10 @@
-# Rewritten by ChatGPT
-
 # Lightweight Python base
 FROM python:3.12-slim
 
 # Set up working directory
 WORKDIR /workspace
 
-# Install system dependencies (OCR, compilers, Postgres client libs)
+# Install system dependencies in one consolidated layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
@@ -15,7 +13,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libtesseract-dev \
     poppler-utils \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/* 
+    vim \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Optional: prevent pip cache buildup
 ENV PIP_NO_CACHE_DIR=1
@@ -23,7 +25,6 @@ ENV PIP_NO_CACHE_DIR=1
 # Copy dependencies and install
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
-RUN apt-get update && apt-get install vim ffmpeg libsm6 libxext6  -y
 
 # Keep container alive for VS Code Dev Container use
 CMD ["sleep", "infinity"]

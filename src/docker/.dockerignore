@@ -1,0 +1,13 @@
+../../data/
+../../docs/
+../runs/
+../datasets/
+../models/
+__pycache__/
+*.pt
+*.jpg
+*.png
+*.csv
+*.parquet
+*.cache
+.git/
