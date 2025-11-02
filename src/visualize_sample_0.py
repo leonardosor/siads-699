@@ -82,10 +82,3 @@ for img_id, img_info in images.items():
     print(f"Saved annotated image: {output_path}")
 
 print("✅ Annotation visualization complete.")
-
-# ======================
-# DISPLAY ANNOTATED IMAGES
-# ======================
-for path in sorted(glob.glob(os.path.join(OUTPUT_DIR, "*.jpg"))):
-    Image.open(path).show()
-
