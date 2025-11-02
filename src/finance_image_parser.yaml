@@ -1,0 +1,7 @@
+path: finance-image/
+train: '../data/input/train/images'
+val: '../data/input/valid/images'
+ 
+# class names
+names: 
+  0: 'finance-image'

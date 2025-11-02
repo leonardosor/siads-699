@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils \
     libpq-dev \
     vim \
+    tree \
     ffmpeg \
     libsm6 \
     libxext6 \
