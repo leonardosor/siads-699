@@ -1,6 +1,6 @@
-path: finance-image/
-train: '../data/input/train/images'
-val: '../data/input/valid/images'
+# path: finance-image/
+train: 'data/input/training'
+test: 'data/input/testing'
  
 # class names
 names: 

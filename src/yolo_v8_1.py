@@ -10,3 +10,4 @@ results = model.train(
    epochs=10,
    batch=8,
    name='yolov8n_custom'
+)
