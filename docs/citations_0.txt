@@ -1,2 +1,0 @@
-https://docs.ultralytics.com/models/yolov8/#yolov8-usage-examples
-https://arxiv.org/html/2408.15857

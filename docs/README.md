@@ -24,6 +24,9 @@ We are attempting to build a state of the art, full stack, text extraction appli
 ### Data
 - [Google Drive][1]
 
+### Docker Container
+The image build includes a PostgreSQL Alpine 15 database, Debian Frontend and Ultralytics (PyTorch, YOLO, OpenCV with GPU) support. As part of the PostgreSQL set-up we're including a database init file that creates a few tables with pre-set columns and data types as a general outline of MLOps data.
+
 ### Documentation
 - [rvl-cdip-invoice][2]
 - [HuggingFace Co-Lab][3]

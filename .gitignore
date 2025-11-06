@@ -100,4 +100,5 @@ temp/
 *.tmp
 *.bak
 *.backup
->>>>>>> docker
+.claude
+archive/
