@@ -1,0 +1,16 @@
+- Kajal
+	- Model fine tuning for yolov8
+	- Finding research article in support of our sample size
+	- Starting on final report
+
+- Leo
+	- Get docker functional with tesseract extracting to Postgresql
+	- Assist on final report outline
+
+- Joey
+	- Architecture diagram
+		- Performance evaluations for components 
+	- Push merged dockerfile
+	- Upload data to google drive
+	- Fix access for teammates to GitHub
+	- Start on second mini-deliverable for final report outline

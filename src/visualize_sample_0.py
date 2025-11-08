@@ -17,7 +17,7 @@ from PIL import Image
 # ======================
 # PATH CONFIGURATION
 # ======================
-BASE_DIR = "../data/input/sample"
+BASE_DIR = "../data/input/main-annotated"
 IMAGE_DIR = os.path.join(BASE_DIR, "images")
 ANNOTATION_PATH = os.path.join(BASE_DIR, "result.json")
 OUTPUT_DIR = os.path.join(BASE_DIR, "annotated")
