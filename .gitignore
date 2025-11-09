@@ -1,3 +1,6 @@
+data/
+src/.streamlit/secrets.toml
+src/runs
 # Environment variables
 .env
 .env.local
@@ -100,4 +103,3 @@ temp/
 *.tmp
 *.bak
 *.backup
->>>>>>> docker

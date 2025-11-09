@@ -1,0 +1,12 @@
+# Docker commands
+yes | docker system prune -a
+docker kill $(docker ps -q)
+docker compose up --build
+docker system prune -af --volumes && docker builder prune -af # written by ChatGPT
+
+
+# Postgres commands
+docker exec -it <id> bash
+psql -U postgres
+CREATE DATABASE mytest;
+\dt
