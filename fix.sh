@@ -1,14 +1,15 @@
-# 1. Confirm branches
-git branch
+# 1. See which file has the conflict
+git status
 
-# 2. Switch to the intended branch
-git checkout feature-great-lakes
+# 2. Open and fix it manually (remove <<<<<<<, =======, >>>>>>> lines)
+nano src/yolo_v8/yolo_v8_0.py
 
-# 3. Merge or move your current work
-# (if changes are still in working directory, they’ll carry over automatically)
-# if you already committed in the wrong branch:
-git cherry-pick <commit_hash_from_feature-initial-build>
+# 3. Mark as resolved
+git add src/yolo_v8/yolo_v8_0.py
 
-# 4. Push to remote
-git push origin feature-great-lakes
+# 4. Commit merge
+git commit -m "Resolved merge conflict"
+
+# 5. Push to remote
+git push origin feature-initial-build
 
