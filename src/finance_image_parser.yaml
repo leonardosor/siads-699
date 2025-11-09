@@ -1,7 +1,0 @@
-# path: finance-image/
-train: 'data/input/training'
-test: 'data/input/testing'
- 
-# class names
-names: 
-  0: 'finance-image'

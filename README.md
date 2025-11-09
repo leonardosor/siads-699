@@ -21,6 +21,9 @@ We are attempting to build a state of the art, full stack, text extraction appli
     └── models
 ```
 
+### Product Architecture
+![alt text](http://url/to/img.png)
+
 ### Data
 - [Google Drive][1]
 
