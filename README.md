@@ -22,10 +22,10 @@ We are attempting to build a state of the art, full stack, text extraction appli
 ```
 
 ### Product Architecture - Logical
-![Logical](https://github.com/joehiggi/siads-699/tree/feature-initial-build/docs/imgs/architecture_0.png)
+![Logical](/docs/imgs/architecture_0.png)
 
 ### Product Architecture - Physical
-![Physical]((https://github.com/joehiggi/siads-699/tree/feature-initial-build/docs/imgs/architecture_1.png))
+![Physical]((/docs/imgs/architecture_1.png))
 
 ### Data
 - [Google Drive][1]
