@@ -1,0 +1,19 @@
+name: yolov8-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - numpy
+  - pandas
+  - matplotlib
+  - pytorch
+  - torchvision
+  - torchaudio
+  - pip:
+      - ultralytics==8.3.0
+      - opencv-python
+      - pycocotools
+      - tqdm
+

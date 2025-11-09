@@ -1,10 +1,9 @@
-# path: finance-image/
-train: '/workspace/data/input/training'
-test: '/workspace/data/input/testing'
-val: '/workspace/data/input/validation'
- 
-# class names
-names: 
-  - 'header'
-  - 'body'
-  - 'footer'
+train: ../../data/input/training
+val: ../../data/input/validation
+test: ../../data/input/testing
+
+names:
+  - header
+  - body
+  - footer
+
