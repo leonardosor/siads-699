@@ -2,7 +2,7 @@
 # COCO Image Visualization Script
 # ------------------------------------------------
 # This script was collaboratively generated with assistance from
-# ChatGPT (OpenAI, 2025), an AI language model providing 
+# ChatGPT (OpenAI, 2025), an AI language model providing
 # code synthesis, explanation, and documentation support.
 # ================================================================
 
@@ -66,7 +66,11 @@ for img_id, img_info in images.items():
         # Draw category label if available
         if "categories" in coco_data:
             category = next(
-                (c["name"] for c in coco_data["categories"] if c["id"] == ann["category_id"]),
+                (
+                    c["name"]
+                    for c in coco_data["categories"]
+                    if c["id"] == ann["category_id"]
+                ),
                 "object",
             )
             plt.text(x, y - 5, category, color="lime", fontsize=10, weight="bold")

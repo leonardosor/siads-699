@@ -1,0 +1,8 @@
+# path: finance-image/
+train: '/workspace/data/input/training'
+test: '/workspace/data/input/testing'
+val: '/workspace/data/input/validation'
+ 
+# class names
+names: 
+  0: 'finance-image-parser'

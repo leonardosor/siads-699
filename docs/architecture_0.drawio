@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="T9HfvtHR2nQ_5acMajMG" name="Physical">
-        <mxGraphModel dx="1800" dy="615" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+        <mxGraphModel dx="1559" dy="527" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -66,6 +66,12 @@
                 </mxCell>
                 <mxCell id="yQUgfchrgnqMcZGuM7FD-2" value="Streamlit" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
                     <mxGeometry x="870" y="160" width="170" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="S8zKcMGBVqwrWYcxc8bX-3" value="Port: 8550" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="787" y="190" width="70" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="S8zKcMGBVqwrWYcxc8bX-4" value="Port: 8550" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="794" y="255" width="70" height="30" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
