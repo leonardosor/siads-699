@@ -21,8 +21,11 @@ We are attempting to build a state of the art, full stack, text extraction appli
     └── models
 ```
 
-### Product Architecture
-![alt text](http://url/to/img.png)
+### Product Architecture - Logical
+![Logical](https://github.com/joehiggi/siads-699/tree/main/docs/imgs/architecture_0.png)
+
+### Product Architecture - Physical
+![Physical]((https://github.com/joehiggi/siads-699/tree/main/docs/imgs/architecture_1.png))
 
 ### Data
 - [Google Drive][1]
