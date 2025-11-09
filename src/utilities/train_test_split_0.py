@@ -8,13 +8,13 @@ dataset = sv.DetectionDataset.from_coco(
 )
 
 # Split the dataset into train and test sets
-train_dataset, test_dataset = dataset.split(
-    split_ratio=0.7, random_state=42, shuffle=True
+val_dataset, test_dataset = dataset.split(
+    split_ratio=.2, random_state=42, shuffle=True
 )
 
 # Split the dataset into train and validation sets
-train_dataset, val_dataset = test_dataset.split(
-    split_ratio=0.5, random_state=42, shuffle=False
+test_dataset, train_dataset =  test_dataset.split(
+    split_ratio=.25, random_state=42, shuffle=False
 )
 
 # Output training dataset as coco
