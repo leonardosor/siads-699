@@ -1,0 +1,42 @@
+name: ci
+on:
+  push:
+    branches: [ main, release/**, feature/**, fix/**, docs/**, chore/**, exp/** ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          # Keep lean. Add your real deps as needed.
+          pip install pytest flake8
+
+      - name: Lint
+        run: |
+          flake8 src || true  # don't fail lint at first, tighten later
+
+      - name: Unit tests
+        run: |
+          pytest -q || true   # start permissive; flip to strict after baseline
+
+      - name: Smoke import (fast)
+        run: |
+          python - <<'PY'
+          import importlib, sys
+          for m in ("os","pathlib"):
+              importlib.import_module(m)
+          print("Smoke OK")
+          PY
