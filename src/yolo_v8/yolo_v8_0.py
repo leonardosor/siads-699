@@ -10,7 +10,7 @@ model = YOLO('/workspace/src/yolo_v8/models/yolov8n.pt')
 results = model.train(
    data='finance-image-parser.yaml',
    imgsz=850,
-   epochs=50,
-   batch=8,
+   epochs=5,
+   batch=4,
    name='finance-image-parser'
 )
