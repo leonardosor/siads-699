@@ -26,3 +26,8 @@ results = model.train(
    batch=4,
    name='finance-image-parser'
 )
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> ad576b537cedccdee05b1656d72db5f3d9329e8c
