@@ -4,12 +4,12 @@
 from ultralytics import YOLO
  
 # Load the model
-model = YOLO('/workspace/src/yolov8/models/yolov8n.pt')
+model = YOLO('/workspace/src/yolo_v8/models/yolov8n.pt')
  
 # Fine tuning (and traning)
 results = model.train(
    data='finance-image-parser.yaml',
-   imgsz=640,
+   imgsz=850,
    epochs=50,
    batch=8,
    name='finance-image-parser'
