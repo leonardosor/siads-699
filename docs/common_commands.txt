@@ -1,0 +1,14 @@
+docker compose up -d
+docker ps
+docker exec -it pdf-ocr-devcontainer bash
+python3 - <<'PYEOF'
+from ultralytics import YOLO
+import pytesseract, psycopg2
+model = YOLO('models/yolov8n.pt')
+print("YOLOv8 ✅", model.info())
+print("Tesseract ✅", pytesseract.get_tesseract_version())
+conn = psycopg2.connect(host="docker-db-1", user="postgres", password="postgres")
+print("PostgreSQL ✅", conn.get_dsn_parameters())
+conn.close()
+PYEOF
+streamlit run src/streamlit/streamlit_app.py --server.port=8501
