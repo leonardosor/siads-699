@@ -1,0 +1,7 @@
+docker stop $(docker ps -aq) 2>/dev/null
+docker system prune -a --volumes -f
+echo -e ".git\n__pycache__\ndata/input\ndata/output\nruns\n*.pt\n*.jpg\n*.png\n*.mp4\n*.csv\n*.json\n*.log\n*.zip" > .dockerignore
+sed -i '' 's|pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel|python:3.12-slim|' Dockerfile
+docker compose build --no-cache
+docker compose up -d
+docker ps
