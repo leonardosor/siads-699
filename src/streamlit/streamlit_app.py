@@ -6,7 +6,7 @@ from pdf2image import convert_from_bytes
 st.set_page_config(page_title="YOLO Diagnostic", layout="wide")
 st.title("YOLO Diagnostic – trace model output")
 
-MODEL_PATH = os.getenv("MODEL_PATH", "/app/models/best.pt")
+MODEL_PATH = os.getenv("MODEL_PATH", "/app/models/yolov8n.pt")
 if not os.path.exists(MODEL_PATH):
     st.error(f"Model not found at {MODEL_PATH}")
     st.stop()

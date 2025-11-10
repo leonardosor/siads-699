@@ -1,4 +1,4 @@
-name: siads-699
+name: capstone
 services:
   app:
     build:

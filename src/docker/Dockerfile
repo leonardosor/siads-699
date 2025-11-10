@@ -16,6 +16,6 @@ RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt
 
 COPY src/streamlit /app/src/streamlit
 
-ENV MODEL_PATH=/app/models/best.pt
+ENV MODEL_PATH=/app/models/yolov8n.pt
 EXPOSE 8501
 CMD ["bash","-lc","streamlit run /app/src/streamlit/streamlit_app.py --server.port=8501 --server.address=0.0.0.0"]

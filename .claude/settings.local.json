@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose exec:*)",
+      "Bash(docker exec pdf-ocr-devcontainer:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker rm:*)",
+      "Bash(python:*)",
+      "Bash(docker volume rm:*)",
+      "Bash(docker exec:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(tree:*)",
+      "Bash(git -C \"d:/docs/MADS/699\" status --short)",
+      "Bash(docker ps:*)",
+      "Bash(docker-compose down:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
