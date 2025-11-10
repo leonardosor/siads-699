@@ -1,31 +1,21 @@
-# Lightweight Python base
 FROM python:3.12-slim
 
-# Set up working directory
-WORKDIR /workspace
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-# Install system dependencies in one consolidated layer
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    git \
-    curl \
-    tesseract-ocr \
-    libtesseract-dev \
-    poppler-utils \
-    libpq-dev \
-    vim \
-    tree \
-    ffmpeg \
-    libsm6 \
-    libxext6 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      tesseract-ocr libtesseract-dev poppler-utils \
+      libglib2.0-0 libgl1 ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/*
 
-# Optional: prevent pip cache buildup
-ENV PIP_NO_CACHE_DIR=1
+WORKDIR /app
+COPY src/docker/requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt
 
-# Copy dependencies and install
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+COPY src/streamlit /app/src/streamlit
 
-# Keep container alive for VS Code Dev Container use
-CMD ["sleep", "infinity"]
+ENV MODEL_PATH=/app/models/best.pt
+EXPOSE 8501
+CMD ["bash","-lc","streamlit run /app/src/streamlit/streamlit_app.py --server.port=8501 --server.address=0.0.0.0"]
