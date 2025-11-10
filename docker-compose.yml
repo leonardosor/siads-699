@@ -1,0 +1,20 @@
+
+  streamlit-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: streamlit-app
+    command: >
+      bash -c "pip install -r app/requirements_min.txt &&
+               streamlit run app/streamlit_app.py --server.port=8501 --server.address=0.0.0.0"
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/workspace
+    environment:
+      - MODELPATH=/workspace/models/best.pt
+      - CONF=0.25
+      - IOU=0.45
+    depends_on:
+      - pdf-ocr-devcontainer
+    restart: unless-stopped
