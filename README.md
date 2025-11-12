@@ -42,6 +42,13 @@ Consistent with MADS academic integrity guidelines, assume that OpenAI's ChatGPT
 - Ensure your YOLO weights live at `models/best.pt` (or point `MODEL_PATH` elsewhere).
 - For local installs outside Docker run `pip install -r src/docker/requirements.txt`; Conda users can apply `src/env/environment.yml`.
 
+### Quickstart (students)
+1. Clone the repo and enter the directory.
+2. Copy your best YOLO weights to `models/best.pt` (alternatively set `MODEL_PATH`).
+3. Launch everything: `docker compose -f src/docker/compose.yml up --build --remove-orphans`.
+4. Open [http://localhost:8501](http://localhost:8501) to use the Streamlit UI.
+5. Tear down when finished: `docker compose -f src/docker/compose.yml down --volumes`.
+
 Spin up the full stack with a single command:
 
 ```bash
@@ -56,6 +63,36 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
 3. Upload one or more JPG/PNG scans. The app runs YOLOv8 inference, draws maize labels with blue outlines over every detection, and lists coordinates/confidence in a table.
 4. Adjust confidence/IoU sliders in the sidebar to tighten or loosen detections.
 5. Download the UM-branded annotated image directly from the UI for documentation or model comparisons.
+
+### Improving YOLO Results on GreatLakes
+1. **Sync code + data**  
+   ```bash
+   scp -r . youruniqname@greatlakes.arc-ts.umich.edu:/scratch/youruniqname/siads-699
+   ```
+2. **Create the training environment** (one-time):  
+   ```bash
+   module load python/3.10.8
+   conda env create -f src/great-lakes-env/environment.yml
+   conda activate yolov8-env
+   ```
+3. **Launch training** with Ultralytics (edit `src/yolo_v8/finance-image-parser.yaml` to point at your dataset):  
+   ```bash
+   yolo detect train \
+     model=yolov8n.pt \
+     data=src/yolo_v8/finance-image-parser.yaml \
+     epochs=50 imgsz=640 batch=16 \
+     project=src/yolo_v8/runs/detect name=finance-image-parser
+   ```
+4. **Monitor performance** by tailing `results.csv` in the run directory or running `tensorboard --logdir src/yolo_v8/runs`.
+5. **Export the best checkpoint** (`runs/detect/<run>/weights/best.pt`) back to your laptop and copy it to `models/best.pt` for inference.
+
+### Tips for Better Inference Accuracy
+- **More epochs & patience**: run at least 50 epochs on GreatLakes; enable `patience=20` to keep training as long as validation improves.
+- **Balanced dataset**: ensure each class (header/body/footer) has similar representation. Use `weighted_boxes_fusion=False` if you only have one model.
+- **High-resolution inputs**: training with `imgsz=1024` often yields crisper boxes on forms; adjust batch size accordingly.
+- **Augmentation tuning**: disable aggressive mosaics for documents (`augment=False` or `degrees=0, scale=0.2`). Text layouts don’t benefit from heavy geometric transforms.
+- **Validation split**: always include a held-out validation folder so metrics (mAP, precision, recall) reflect true generalization.
+- **Post-processing**: within Streamlit, experiment with `confidence`/`iou` sliders—lowering confidence can surface faint detections, raising IoU can reduce overlapping boxes.
 
 ### Data
 - [Google Drive][1]
