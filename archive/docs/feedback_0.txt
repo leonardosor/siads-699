@@ -1,9 +1,0 @@
-- Per Professor Paul
-	- We need to determine if the bounded boxes are accurate.
-		- I.e. are they two pixels off?
-	- Put together an architecture diagram
-	- Put together an explanation of performance at each step, and end to end
- 	- What would a sample size of annotated images be in the real world - find literature to defend our decisions
-		- We should calculate an FTE of this
-		- Determine what it would cost to generate the appropriate sample size
-	- We want to ensure that this final project will be a pitch to company executives
