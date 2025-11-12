@@ -86,14 +86,6 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
 4. **Monitor performance** by tailing `results.csv` in the run directory or running `tensorboard --logdir src/yolo_v8/runs`.
 5. **Export the best checkpoint** (`runs/detect/<run>/weights/best.pt`) back to your laptop and copy it to `models/best.pt` for inference.
 
-### Tips for Better Inference Accuracy
-- **More epochs & patience**: run at least 50 epochs on GreatLakes; enable `patience=20` to keep training as long as validation improves.
-- **Balanced dataset**: ensure each class (header/body/footer) has similar representation. Use `weighted_boxes_fusion=False` if you only have one model.
-- **High-resolution inputs**: training with `imgsz=1024` often yields crisper boxes on forms; adjust batch size accordingly.
-- **Augmentation tuning**: disable aggressive mosaics for documents (`augment=False` or `degrees=0, scale=0.2`). Text layouts don’t benefit from heavy geometric transforms.
-- **Validation split**: always include a held-out validation folder so metrics (mAP, precision, recall) reflect true generalization.
-- **Post-processing**: within Streamlit, experiment with `confidence`/`iou` sliders—lowering confidence can surface faint detections, raising IoU can reduce overlapping boxes.
-
 ### Data
 - [Google Drive][1]
 
