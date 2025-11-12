@@ -18,4 +18,4 @@ COPY src/streamlit /app/src/streamlit
 
 ENV MODEL_PATH=/app/models/best.pt
 EXPOSE 8501
-CMD ["bash","-lc","streamlit run /app/src/streamlit/streamlit_app.py --server.port=8501 --server.address=0.0.0.0"]
+CMD ["bash","-lc","streamlit run /app/src/streamlit/streamlit_application.py --server.port=8501 --server.address=0.0.0.0"]
