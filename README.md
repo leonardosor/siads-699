@@ -95,11 +95,3 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
 [3]: https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/videos/save_load_dataset.ipynb#scrollTo=091FrwQDXQiM
 [4]: https://arxiv.org/html/2408.15857
 [5]: https://tesseract-ocr.github.io/tessdoc/
-- Fix a class-ID mix-up after label QA:
-  ```bash
-  python src/scripts/remap_yolo_labels.py \
-    --root models/yolov8-run/data/input \
-    --map 0:1 1:2 2:0
-  python src/scripts/count_yolo_labels.py --data-config src/yolo_v8/finance-image-parser.yaml
-  ```
-  (The example mapping swaps header→body, body→footer, footer→header.)
