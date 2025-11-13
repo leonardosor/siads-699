@@ -1,2 +1,12 @@
 
 open -a safari -u http://localhost:8501
+
+
+- Fix a class-ID mix-up after label QA:
+  ```bash
+  python src/scripts/remap_yolo_labels.py \
+    --root models/yolov8-run/data/input \
+    --map 0:1 1:2 2:0
+  python src/scripts/count_yolo_labels.py --data-config src/yolo_v8/finance-image-parser.yaml
+  ```
+  (The example mapping swaps header→body, body→footer, footer→header.)
