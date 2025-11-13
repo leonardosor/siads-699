@@ -48,7 +48,6 @@ jupyter_notebook_config.py
 *.onnx
 *.pt
 *.pth
-models/
 *.model
 checkpoints/
 runs/

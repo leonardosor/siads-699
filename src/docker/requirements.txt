@@ -1,7 +1,12 @@
-ultralytics==8.2.103
-streamlit==1.39.0
-pillow>=10.3.0
-numpy>=1.26.4
-opencv-python-headless>=4.10.0.84
-pdf2image>=1.17.0
-psycopg2-binary>=2.9.9
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.3.1+cpu
+torchvision==0.18.1+cpu
+torchaudio==2.3.1+cpu
+ultralytics==8.3.226
+opencv-python-headless==4.10.0.84
+pdf2image
+pillow
+pytesseract
+streamlit
+pandas
+numpy

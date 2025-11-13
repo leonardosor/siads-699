@@ -1,0 +1,19 @@
+# macOS noise
+.DS_Store
+
+# Keep raw data but ignore bulky/generated subsets
+data/output/
+data/input/archive/
+
+# YOLO training artifacts live outside of git
+src/yolo_v8/runs/
+runs/
+artifacts/
+logs/
+
+# Slurm / training logs
+*.log
+*.out
+
+# Packed run artifacts
+*.tar.gz
