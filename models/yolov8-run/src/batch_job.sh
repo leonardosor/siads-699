@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-PROJECT_ROOT=${PROJECT_ROOT:-/home/${USER}/siads-699/models/training-kit}
+PROJECT_ROOT=${PROJECT_ROOT:-/home/${USER}/siads-699/models/yolov8-run}
 RUN_NAME=${RUN_NAME:-finance-parser-$(date +%Y%m%d_%H%M%S)}
 EPOCHS=${EPOCHS:-150}
 BATCH=${BATCH:-4}
@@ -24,6 +24,10 @@ RUNS_DIR="${PROJECT_ROOT}/runs/detect"
 ARTIFACT_DIR="${PROJECT_ROOT}/artifacts"
 
 echo "Starting YOLOv8 training job: ${RUN_NAME}"
+if [[ -n ":${CUDA_MODULE:-}:" && "${CUDA_MODULE:-}" != ":" ]]; then
+  echo "Loading CUDA module ${CUDA_MODULE}"
+  module load "${CUDA_MODULE}" || echo "Warning: failed to load ${CUDA_MODULE}; continuing without explicit CUDA module"
+fi
 module load mamba/py3.12
 source /sw/pkgs/arc/mamba/py3.12/etc/profile.d/conda.sh
 conda activate yolov8-env

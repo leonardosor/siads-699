@@ -15,7 +15,7 @@ Consistent with MADS academic integrity guidelines, assume that OpenAI's ChatGPT
 ├── models
 │   ├── best.pt / active_run.txt
 │   ├── runs/ (see models/runs/README.md)
-│   └── training-kit/ (GreatLakes training kit)
+│   └── yolov8-run/ (GreatLakes training kit)
 └── src
     ├── docker          # Dockerfile, Compose, dependency lock
     ├── env             # Conda specs (e.g., environment.yml)
@@ -72,7 +72,7 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
   Environment overrides if needed:
   - `REMOTE_USER` (default `joehiggi`)
   - `REMOTE_HOST` (default `greatlakes.arc-ts.umich.edu`)
-  - `REMOTE_PROJECT` (default `/home/$REMOTE_USER/siads-699/models/training-kit`)
+  - `REMOTE_PROJECT` (default `/home/$REMOTE_USER/siads-699/models/yolov8-run`)
   - `LOCAL_RUNS_DIR` (default `models/runs`)
   Add `--no-best` to skip copying `weights/best.pt` into `models/best.pt`.
 - Switch to any archived run locally without re-downloading:
@@ -103,10 +103,10 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
    Fix mislabeled/imbalanced splits before retraining.
 4. **Launch the tuned training job** (defaults: 150 epochs, imgsz 1024, batch 4, patience 60, mosaic off, cache on):  
    ```bash
-   cd /home/joehiggi/siads-699/models/training-kit
-   RUN_NAME=body-focus sbatch src/utilities/batch_job.sh
+   cd /home/joehiggi/siads-699/models/yolov8-run
+   CUDA_MODULE=cuda/12.0.0 RUN_NAME=body-focus sbatch src/batch_job.sh
    ```
-   Override hyperparameters via env vars (`EPOCHS`, `IMGSZ`, `BATCH`, `HYPERPARAMS`, etc.) or run interactively with `srun`.
+   Replace `cuda/12.0.0` with whichever CUDA module `module spider cuda` lists on GreatLakes (set `CUDA_MODULE` only if needed). Override hyperparameters via env vars (`EPOCHS`, `IMGSZ`, `BATCH`, `HYPERPARAMS`, etc.) or run interactively with `srun`.
 5. **Monitor performance** with `squeue -u joehiggi` and `tail -f /home/joehiggi/<job-name>-<jobid>.log`.
 6. **Pull down the resulting checkpoint**:  
    ```bash
@@ -122,11 +122,11 @@ rsync -av --delete --exclude ".git" --exclude ".venv" --exclude "__pycache__" ./
 
 # Submit job from GL login node
 ssh joehiggi@greatlakes.arc-ts.umich.edu <<'EOF'
-cd /home/joehiggi/siads-699/models/training-kit
+cd /home/joehiggi/siads-699/models/yolov8-run
 module load python/3.10.8
 source /sw/pkgs/arc/mamba/py3.12/etc/profile.d/conda.sh
 conda activate yolov8-env
-RUN_NAME=body-focus2 sbatch src/utilities/batch_job.sh
+CUDA_MODULE=cuda/12.0.0 RUN_NAME=body-focus2 sbatch src/batch_job.sh
 EOF
 
 # After it finishes, sync + redeploy
@@ -137,8 +137,8 @@ EOF
 - Visualize any labeled page to ensure class IDs align with expectations:
   ```bash
   python src/scripts/preview_yolo_labels.py \
-    --image models/training-kit/data/input/training/images/example.jpg \
-    --labels models/training-kit/data/input/training/labels/example.txt \
+    --image models/yolov8-run/data/input/training/images/example.jpg \
+    --labels models/yolov8-run/data/input/training/labels/example.txt \
     --output preview.jpg
   ```
 - Review the generated `preview.jpg` and confirm each colored box matches its intended class. Fix any mislabeled `.txt` files before retraining.
@@ -160,7 +160,7 @@ EOF
 - Fix a class-ID mix-up after label QA:
   ```bash
   python src/scripts/remap_yolo_labels.py \
-    --root models/training-kit/data/input \
+    --root models/yolov8-run/data/input \
     --map 0:1 1:2 2:0
   python src/scripts/count_yolo_labels.py --data-config src/yolo_v8/finance-image-parser.yaml
   ```

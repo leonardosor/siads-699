@@ -36,7 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch", type=int, default=8)
     parser.add_argument("--imgsz", type=int, default=640, help="Square image size.")
-    parser.add_argument("--device", type=str, default="cpu", help="CUDA device id or 'cpu'.")
+    parser.add_argument("--device", type=str, default="0", help="CUDA device id or 'cpu'.")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--patience", type=int, default=40)
     parser.add_argument("--lr0", type=float, default=0.01, help="Initial learning rate.")

@@ -10,7 +10,7 @@ from ultralytics import YOLO
 DATASET_ROOT = Path(
     os.environ.get(
         "FINANCE_DATASET_ROOT",
-        Path(__file__).resolve().parents[3] / "models" / "training-kit" / "data" / "input",
+        Path(__file__).resolve().parents[3] / "models" / "yolov8-run" / "data" / "input",
     )
 )
 image_dir = DATASET_ROOT / "training" / "images"
