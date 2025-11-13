@@ -28,6 +28,10 @@ if [[ -n ":${CUDA_MODULE:-}:" && "${CUDA_MODULE:-}" != ":" ]]; then
   echo "Loading CUDA module ${CUDA_MODULE}"
   module load "${CUDA_MODULE}" || echo "Warning: failed to load ${CUDA_MODULE}; continuing without explicit CUDA module"
 fi
+# If CUDA pulled in a python module, unload it before loading mamba
+if module list 2>&1 | grep -qi "python"; then
+  module purge python >/dev/null 2>&1 || module unload python >/dev/null 2>&1 || true
+fi
 module load mamba/py3.12
 source /sw/pkgs/arc/mamba/py3.12/etc/profile.d/conda.sh
 conda activate yolov8-env
