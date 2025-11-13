@@ -8,7 +8,6 @@ services:
       - "${APP_PORT:-8501}:8501"
     volumes:
       - ../../models:/app/models:ro
-      - ../../data:/app/data:ro
       - ../../src:/app/src
       - app_output:/app/output
     environment:

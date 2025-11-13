@@ -11,15 +11,11 @@ Consistent with MADS academic integrity guidelines, assume that OpenAI's ChatGPT
 ```{bash}
 .
 ├── .devcontainer
-├── data
-│   ├── input
-│   │   ├── ground-truth
-│   │   ├── testing
-│   │   ├── training
-│   │   └── validation
-│   └── output
 ├── docs
 ├── models
+│   ├── best.pt / active_run.txt
+│   ├── runs/ (see models/runs/README.md)
+│   └── yolov8-run/ (GreatLakes training kit)
 └── src
     ├── docker          # Dockerfile, Compose, dependency lock
     ├── env             # Conda specs (e.g., environment.yml)
@@ -37,12 +33,12 @@ Consistent with MADS academic integrity guidelines, assume that OpenAI's ChatGPT
 
 ### Dockerized Development
 - All container build assets live in `src/docker/` (`Dockerfile`, `compose.yml`, dependency lock, and helper scripts).
-- `src/docker/compose.yml` builds the Streamlit image, mounts `./models`, `./data`, and `./src`, and provisions PostgreSQL with `src/scripts/init-db.sql`.
+- `src/docker/compose.yml` builds the Streamlit image, mounts `./models` and `./src`, and provisions PostgreSQL with `src/scripts/init-db.sql`.
 - Default credentials/ports are injected via environment variables (`APP_PORT`, `DB_PORT`, `POSTGRES_*`, `MODEL_PATH`). Override them inline or inject a `.env`.
 - Ensure your YOLO weights live at `models/best.pt` (or point `MODEL_PATH` elsewhere).
 - For local installs outside Docker run `pip install -r src/docker/requirements.txt`; Conda users can apply `src/env/environment.yml`.
 
-### Quickstart (students)
+### Quickstart
 1. Clone the repo and enter the directory.
 2. Copy your best YOLO weights to `models/best.pt` (alternatively set `MODEL_PATH`).
 3. Launch everything: `docker compose -f src/docker/compose.yml up --build --remove-orphans`.
@@ -64,27 +60,26 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
 4. Adjust confidence/IoU sliders in the sidebar to tighten or loosen detections.
 5. Download the UM-branded annotated image directly from the UI for documentation or model comparisons.
 
-### Improving YOLO Results on GreatLakes
-1. **Sync code + data**  
-   ```bash
-   scp -r . youruniqname@greatlakes.arc-ts.umich.edu:/scratch/youruniqname/siads-699
-   ```
-2. **Create the training environment** (one-time):  
-   ```bash
-   module load python/3.10.8
-   conda env create -f src/great-lakes-env/environment.yml
-   conda activate yolov8-env
-   ```
-3. **Launch training** with Ultralytics (edit `src/yolo_v8/finance-image-parser.yaml` to point at your dataset):  
-   ```bash
-   yolo detect train \
-     model=yolov8n.pt \
-     data=src/yolo_v8/finance-image-parser.yaml \
-     epochs=50 imgsz=640 batch=16 \
-     project=src/yolo_v8/runs/detect name=finance-image-parser
-   ```
-4. **Monitor performance** by tailing `results.csv` in the run directory or running `tensorboard --logdir src/yolo_v8/runs`.
-5. **Export the best checkpoint** (`runs/detect/<run>/weights/best.pt`) back to your laptop and copy it to `models/best.pt` for inference.
+### Managing YOLO Runs & Archives
+- Every training run lives under `models/runs/<run-name>/` (metrics, configs, preview images, weights). Git tracks the metadata, while `.pt/.pth` binaries remain ignored.
+- `models/active_run.txt` records which run last copied its checkpoint into `models/best.pt`.
+- Keep the currently deployed checkpoint at `models/best.pt`; replace it whenever you want Streamlit to pick up a new model (the helper below can copy it automatically).
+- Need to revert? `./src/scripts/reset_streamlit_model.sh` restores the baseline run's `best.pt` (override `BASELINE_RUN` or pass `--weights <path>` if you prefer another checkpoint) and restarts Streamlit unless you add `--no-restart`.
+- Pull a run down from Great Lakes and refresh the active weights in one step:
+  ```bash
+  ./src/scripts/sync_yolov8_run.sh finance-parser-20251112_143826
+  ```
+  Environment overrides if needed:
+  - `REMOTE_USER` (default `joehiggi`)
+  - `REMOTE_HOST` (default `greatlakes.arc-ts.umich.edu`)
+  - `REMOTE_PROJECT` (default `/home/$REMOTE_USER/siads-699/models/yolov8-run`)
+  - `LOCAL_RUNS_DIR` (default `models/runs`)
+  Add `--no-best` to skip copying `weights/best.pt` into `models/best.pt`.
+- Switch to any archived run locally without re-downloading:
+  ```bash
+  ./src/scripts/set_active_run.sh finance-image-parser4
+  docker compose -f src/docker/compose.yml up --build --remove-orphans -d
+  ```
 
 ### Data
 - [Google Drive][1]

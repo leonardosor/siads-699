@@ -50,9 +50,12 @@ jupyter_notebook_config.py
 *.pth
 *.model
 checkpoints/
-runs/
+/runs/
 wandb/
 mlruns/
+
+# Local notes
+local/google-drive-sharing.md
 
 # Data files
 data/*

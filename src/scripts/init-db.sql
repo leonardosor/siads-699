@@ -188,8 +188,8 @@ CREATE TRIGGER update_annotations_updated_at BEFORE UPDATE ON annotations
 -- Insert a sample document
 INSERT INTO documents (filename, file_path, file_size_bytes, page_count, document_type, status)
 VALUES
-    ('sample_invoice.pdf', '/workspace/data/input/sample_invoice.pdf', 524288, 1, 'invoice', 'uploaded'),
-    ('sample_form.pdf', '/workspace/data/input/sample_form.pdf', 1048576, 2, 'form', 'uploaded')
+    ('sample_invoice.pdf', '/workspace/datasets/sample_invoice.pdf', 524288, 1, 'invoice', 'uploaded'),
+    ('sample_form.pdf', '/workspace/datasets/sample_form.pdf', 1048576, 2, 'form', 'uploaded')
 ON CONFLICT DO NOTHING;
 
 -- Create a sample model record

@@ -1,0 +1,8 @@
+train: ../data/input/training
+val: ../data/input/validation
+test: ../data/input/testing
+
+names:
+  - header
+  - body
+  - footer
