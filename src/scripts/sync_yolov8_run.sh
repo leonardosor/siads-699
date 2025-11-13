@@ -64,9 +64,11 @@ rsync -av --progress "${REMOTE_PATH}" "${LOCAL_RUN_PATH}"
 if [[ ${COPY_BEST} -eq 1 ]]; then
   BEST_SRC="${LOCAL_RUN_PATH}/weights/best.pt"
   BEST_DST="${REPO_ROOT}/models/best.pt"
+  ACTIVE_FILE="${REPO_ROOT}/models/active_run.txt"
   if [[ -f "${BEST_SRC}" ]]; then
     cp "${BEST_SRC}" "${BEST_DST}"
     echo "Updated ${BEST_DST} from ${BEST_SRC}"
+    echo "${RUN_NAME}" > "${ACTIVE_FILE}"
   else
     echo "Warning: ${BEST_SRC} not found; skipped copying best weights."
   fi

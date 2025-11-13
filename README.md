@@ -13,6 +13,9 @@ Consistent with MADS academic integrity guidelines, assume that OpenAI's ChatGPT
 ├── .devcontainer
 ├── docs
 ├── models
+│   ├── best.pt / active_run.txt
+│   ├── runs/ (see models/runs/README.md)
+│   └── training-kit/ (GreatLakes training kit)
 └── src
     ├── docker          # Dockerfile, Compose, dependency lock
     ├── env             # Conda specs (e.g., environment.yml)
@@ -59,6 +62,7 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
 
 ### Managing YOLO Runs & Archives
 - Every training run lives under `models/runs/<run-name>/` (metrics, configs, preview images, weights). Git tracks the metadata, while `.pt/.pth` binaries remain ignored.
+- `models/active_run.txt` records which run last copied its checkpoint into `models/best.pt`.
 - Keep the currently deployed checkpoint at `models/best.pt`; replace it whenever you want Streamlit to pick up a new model (the helper below can copy it automatically).
 - Need to revert? `./src/scripts/reset_streamlit_model.sh` restores the baseline run's `best.pt` (override `BASELINE_RUN` or pass `--weights <path>` if you prefer another checkpoint) and restarts Streamlit unless you add `--no-restart`.
 - Pull a run down from Great Lakes and refresh the active weights in one step:
@@ -68,9 +72,14 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
   Environment overrides if needed:
   - `REMOTE_USER` (default `joehiggi`)
   - `REMOTE_HOST` (default `greatlakes.arc-ts.umich.edu`)
-  - `REMOTE_PROJECT` (default `/home/$REMOTE_USER/siads-699/models/yolov8-run`)
+  - `REMOTE_PROJECT` (default `/home/$REMOTE_USER/siads-699/models/training-kit`)
   - `LOCAL_RUNS_DIR` (default `models/runs`)
   Add `--no-best` to skip copying `weights/best.pt` into `models/best.pt`.
+- Switch to any archived run locally without re-downloading:
+  ```bash
+  ./src/scripts/set_active_run.sh finance-image-parser4
+  docker compose -f src/docker/compose.yml up --build --remove-orphans -d
+  ```
 
 ### Improving YOLO Results on GreatLakes
 1. **Sync code**  
@@ -94,7 +103,7 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
    Fix mislabeled/imbalanced splits before retraining.
 4. **Launch the tuned training job** (defaults: 150 epochs, imgsz 1024, batch 4, patience 60, mosaic off, cache on):  
    ```bash
-   cd /home/joehiggi/siads-699/models/yolov8-run
+   cd /home/joehiggi/siads-699/models/training-kit
    RUN_NAME=body-focus sbatch src/utilities/batch_job.sh
    ```
    Override hyperparameters via env vars (`EPOCHS`, `IMGSZ`, `BATCH`, `HYPERPARAMS`, etc.) or run interactively with `srun`.
@@ -104,6 +113,35 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
    ./src/scripts/sync_yolov8_run.sh body-focus
    ```
    Streamlit rebuilds automatically with the new weights; `./src/scripts/reset_streamlit_model.sh` restores the baseline model if needed.
+
+### Quick HPC Retrain (one-liners)
+```bash
+# Push repo up (skip git + venv junk)
+rsync -av --delete --exclude ".git" --exclude ".venv" --exclude "__pycache__" ./ \
+  joehiggi@greatlakes.arc-ts.umich.edu:/home/joehiggi/siads-699/
+
+# Submit job from GL login node
+ssh joehiggi@greatlakes.arc-ts.umich.edu <<'EOF'
+cd /home/joehiggi/siads-699/models/training-kit
+module load python/3.10.8
+source /sw/pkgs/arc/mamba/py3.12/etc/profile.d/conda.sh
+conda activate yolov8-env
+RUN_NAME=body-focus2 sbatch src/utilities/batch_job.sh
+EOF
+
+# After it finishes, sync + redeploy
+./src/scripts/sync_yolov8_run.sh body-focus2
+```
+
+### Label QA (catch header/body swaps)
+- Visualize any labeled page to ensure class IDs align with expectations:
+  ```bash
+  python src/scripts/preview_yolo_labels.py \
+    --image models/training-kit/data/input/training/images/example.jpg \
+    --labels models/training-kit/data/input/training/labels/example.txt \
+    --output preview.jpg
+  ```
+- Review the generated `preview.jpg` and confirm each colored box matches its intended class. Fix any mislabeled `.txt` files before retraining.
 
 ### Data
 - [Google Drive][1]
@@ -119,3 +157,11 @@ Shut everything down with `docker compose -f src/docker/compose.yml down --volum
 [3]: https://colab.research.google.com/github/huggingface/notebooks/blob/master/course/videos/save_load_dataset.ipynb#scrollTo=091FrwQDXQiM
 [4]: https://arxiv.org/html/2408.15857
 [5]: https://tesseract-ocr.github.io/tessdoc/
+- Fix a class-ID mix-up after label QA:
+  ```bash
+  python src/scripts/remap_yolo_labels.py \
+    --root models/training-kit/data/input \
+    --map 0:1 1:2 2:0
+  python src/scripts/count_yolo_labels.py --data-config src/yolo_v8/finance-image-parser.yaml
+  ```
+  (The example mapping swaps header→body, body→footer, footer→header.)

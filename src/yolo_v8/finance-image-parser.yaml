@@ -1,8 +1,0 @@
-train: ../../models/yolov8-run/data/input/training
-val: ../../models/yolov8-run/data/input/validation
-test: ../../models/yolov8-run/data/input/testing
-
-names:
-  - header
-  - body
-  - footer
