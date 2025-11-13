@@ -140,7 +140,7 @@ def main() -> None:
         st.markdown(f"### {uploaded.name}")
         raw_image = _bytes_to_image(uploaded.getvalue())
 
-        st.image(raw_image, caption="Original", use_column_width=True)
+        st.image(raw_image, caption="Original", use_container_width=True)
         with st.spinner("Running YOLOv8 inference…"):
             annotated, detections = _run_inference(raw_image, confidence, iou)
 
@@ -151,7 +151,7 @@ def main() -> None:
         annotated_buffer = io.BytesIO()
         annotated.save(annotated_buffer, format="JPEG")
 
-        st.image(annotated_buffer.getvalue(), caption="UM-Branded Bounding Boxes", use_column_width=True)
+        st.image(annotated_buffer.getvalue(), caption="UM-Branded Bounding Boxes", use_container_width=True)
         st.download_button(
             label="Download annotated JPG",
             data=annotated_buffer.getvalue(),

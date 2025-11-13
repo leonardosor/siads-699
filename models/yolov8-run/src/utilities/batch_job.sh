@@ -14,9 +14,11 @@ set -euo pipefail
 
 PROJECT_ROOT=${PROJECT_ROOT:-/home/${USER}/siads-699/models/yolov8-run}
 RUN_NAME=${RUN_NAME:-finance-parser-$(date +%Y%m%d_%H%M%S)}
-EPOCHS=${EPOCHS:-200}
-BATCH=${BATCH:-8}
-IMGSZ=${IMGSZ:-640}
+EPOCHS=${EPOCHS:-150}
+BATCH=${BATCH:-4}
+IMGSZ=${IMGSZ:-1024}
+PATIENCE=${PATIENCE:-60}
+HYPERPARAMS=${HYPERPARAMS:-"--mosaic 0 --cache"}
 
 RUNS_DIR="${PROJECT_ROOT}/runs/detect"
 ARTIFACT_DIR="${PROJECT_ROOT}/artifacts"
@@ -40,11 +42,12 @@ python src/yolo_v8/train.py \
   --imgsz "${IMGSZ}" \
   --device 0 \
   --workers 4 \
-  --patience 50 \
+  --patience "${PATIENCE}" \
   --project runs/detect \
   --name "${RUN_NAME}" \
   --cos-lr \
-  --clean-broken
+  --clean-broken \
+  ${HYPERPARAMS}
 
 RUN_PATH="${RUNS_DIR}/${RUN_NAME}"
 if [[ -d "${RUN_PATH}" ]]; then

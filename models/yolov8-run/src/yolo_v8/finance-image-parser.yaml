@@ -1,4 +1,4 @@
-path: data/input
+path: ../data/input
 
 train: training/images
 val: validation/images
