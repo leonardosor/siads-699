@@ -1,7 +1,7 @@
 task: detect
 mode: train
 model: /home/joehiggi/siads-699/models/yolov8-run/models/yolov8n.pt
-data: /home/joehiggi/siads-699/models/yolov8-run/src/yolo_v8/finance-image-parser.yaml
+data: /home/joehiggi/siads-699/models/yolov8-run/src/finance-image-parser.yaml
 epochs: 150
 time: null
 patience: 60

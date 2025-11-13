@@ -1,0 +1,2 @@
+
+open -a safari -u http://localhost:8501
