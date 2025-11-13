@@ -38,7 +38,7 @@ Consistent with MADS academic integrity guidelines, assume that OpenAI's ChatGPT
 - Ensure your YOLO weights live at `models/best.pt` (or point `MODEL_PATH` elsewhere).
 - For local installs outside Docker run `pip install -r src/docker/requirements.txt`; Conda users can apply `src/env/environment.yml`.
 
-### Quickstart (students)
+### Quickstart
 1. Clone the repo and enter the directory.
 2. Copy your best YOLO weights to `models/best.pt` (alternatively set `MODEL_PATH`).
 3. Launch everything: `docker compose -f src/docker/compose.yml up --build --remove-orphans`.
