@@ -39,17 +39,28 @@ except (ImportError, AttributeError):
 
 
 # Determine repo root: traverse up until we find the directory containing 'src/', 'data/', 'models/'
+
 def _find_repo_root() -> Path:
-    """Find the repository root by looking for marker directories."""
-    current = Path(__file__).resolve().parent
-    for _ in range(5):  # Limit traversal to 5 levels up
-        if (
-            (current / "src").exists()
-            and (current / "data").exists()
-            and (current / "models").exists()
-        ):
-            return current
-        current = current.parent
+    """
+    Navigates up from the current file's directory to find the repository root.
+    The repository root is identified by the presence of 'src/', 'data/', and 'models/' directories.
+    A special case is added for the Docker environment where the root is '/app'.
+    """
+    current_path = Path(__file__).resolve()
+
+    # Handle Docker environment
+    if "DOCKER_ENV" in os.environ or str(current_path).startswith("/app"):
+        # Inside Docker, the structure is /app/src, /app/data, etc.
+        # So, we need to find the '/app' directory.
+        for parent in current_path.parents:
+            if parent.name == "app":
+                return parent
+
+    # Original logic for non-Docker environments
+    for parent in current_path.parents:
+        if (parent / "src").is_dir() and (parent / "data").is_dir() and (parent / "models").is_dir():
+            return parent
+
     raise RuntimeError(
         "Could not find repository root. Expected to find 'src/', 'data/', and 'models/' directories."
     )
