@@ -16,14 +16,20 @@ UM_MAIZE = "#FFCB05"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Visualize YOLO label files for QC.")
-    parser.add_argument("--image", required=True, help="Path to the source image (JPG/PNG).")
-    parser.add_argument("--labels", required=True, help="Path to the matching YOLO label .txt file.")
+    parser.add_argument(
+        "--image", required=True, help="Path to the source image (JPG/PNG)."
+    )
+    parser.add_argument(
+        "--labels", required=True, help="Path to the matching YOLO label .txt file."
+    )
     parser.add_argument(
         "--names-yaml",
         default="src/yolo_v8/finance-image-parser.yaml",
         help="Dataset YAML containing `names` entries.",
     )
-    parser.add_argument("--output", default="preview.jpg", help="Where to save the annotated preview.")
+    parser.add_argument(
+        "--output", default="preview.jpg", help="Where to save the annotated preview."
+    )
     return parser.parse_args()
 
 

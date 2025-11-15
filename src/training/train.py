@@ -25,8 +25,15 @@ DEFAULT_PROJECT = KIT_ROOT / "runs" / "detect"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Fine-tune YOLOv8 with reproducible defaults.")
-    parser.add_argument("--weights", type=str, default=str(DEFAULT_WEIGHTS), help="Path to starting weights (.pt).")
+    parser = argparse.ArgumentParser(
+        description="Fine-tune YOLOv8 with reproducible defaults."
+    )
+    parser.add_argument(
+        "--weights",
+        type=str,
+        default=str(DEFAULT_WEIGHTS),
+        help="Path to starting weights (.pt).",
+    )
     parser.add_argument(
         "--data-config",
         type=str,
@@ -36,26 +43,60 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch", type=int, default=8)
     parser.add_argument("--imgsz", type=int, default=640, help="Square image size.")
-    parser.add_argument("--device", type=str, default="0", help="CUDA device id or 'cpu'.")
+    parser.add_argument(
+        "--device", type=str, default="0", help="CUDA device id or 'cpu'."
+    )
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--patience", type=int, default=40)
-    parser.add_argument("--lr0", type=float, default=0.01, help="Initial learning rate.")
-    parser.add_argument("--lrf", type=float, default=0.01, help="Final learning rate fraction.")
+    parser.add_argument(
+        "--lr0", type=float, default=0.01, help="Initial learning rate."
+    )
+    parser.add_argument(
+        "--lrf", type=float, default=0.01, help="Final learning rate fraction."
+    )
     parser.add_argument("--momentum", type=float, default=0.937)
-    parser.add_argument("--weight-decay", type=float, default=0.0005, dest="weight_decay")
-    parser.add_argument("--project", type=str, default=str(DEFAULT_PROJECT), help="Relative or absolute project directory.")
-    parser.add_argument("--name", type=str, default=None, help="Run name inside the project directory.")
+    parser.add_argument(
+        "--weight-decay", type=float, default=0.0005, dest="weight_decay"
+    )
+    parser.add_argument(
+        "--project",
+        type=str,
+        default=str(DEFAULT_PROJECT),
+        help="Relative or absolute project directory.",
+    )
+    parser.add_argument(
+        "--name", type=str, default=None, help="Run name inside the project directory."
+    )
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--cache", action="store_true", help="Cache images to RAM/disk for faster epochs.")
+    parser.add_argument(
+        "--cache",
+        action="store_true",
+        help="Cache images to RAM/disk for faster epochs.",
+    )
     parser.add_argument("--cos-lr", action="store_true", dest="cos_lr")
-    parser.add_argument("--clean-broken", action="store_true", help="Drop unreadable images before training.")
-    parser.add_argument("--exist-ok", action="store_true", dest="exist_ok", help="Overwrite an existing run.")
-    parser.add_argument("--resume", action="store_true", help="Resume the most recent matching run.")
-    parser.add_argument("--mosaic", type=float, default=1.0, help="Mosaic probability (0 disables).")
+    parser.add_argument(
+        "--clean-broken",
+        action="store_true",
+        help="Drop unreadable images before training.",
+    )
+    parser.add_argument(
+        "--exist-ok",
+        action="store_true",
+        dest="exist_ok",
+        help="Overwrite an existing run.",
+    )
+    parser.add_argument(
+        "--resume", action="store_true", help="Resume the most recent matching run."
+    )
+    parser.add_argument(
+        "--mosaic", type=float, default=1.0, help="Mosaic probability (0 disables)."
+    )
     return parser.parse_args()
 
 
-def resolve_path(path_like: str | os.PathLike[str], base: Optional[Path] = None) -> Path:
+def resolve_path(
+    path_like: str | os.PathLike[str], base: Optional[Path] = None
+) -> Path:
     candidate = Path(path_like)
     if candidate.is_absolute():
         return candidate
@@ -69,7 +110,9 @@ def load_dataset_splits(config_path: Path) -> Dict[str, Path]:
 
     config_dir = config_path.parent
     dataset_root = config.get("path")
-    dataset_base = resolve_path(dataset_root, config_dir) if dataset_root else config_dir
+    dataset_base = (
+        resolve_path(dataset_root, config_dir) if dataset_root else config_dir
+    )
 
     def _resolve(entry: Optional[str]) -> Optional[Path]:
         if not entry:

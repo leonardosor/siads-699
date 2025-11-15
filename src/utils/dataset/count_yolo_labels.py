@@ -50,11 +50,15 @@ def load_config(path: Path) -> Tuple[Dict[str, str], Dict[int, str]]:
 
     config_root = path.parent
     dataset_root = Path(config.get("path", "")) if config.get("path") else None
-    base = dataset_root.resolve() if dataset_root and dataset_root.is_absolute() else (
-        config_root / dataset_root if dataset_root else config_root
+    base = (
+        dataset_root.resolve()
+        if dataset_root and dataset_root.is_absolute()
+        else (config_root / dataset_root if dataset_root else config_root)
     )
 
-    splits = {key: resolve_split(base, config.get(key)) for key in ("train", "val", "test")}
+    splits = {
+        key: resolve_split(base, config.get(key)) for key in ("train", "val", "test")
+    }
     names = config.get("names") or {}
     if isinstance(names, list):
         names = {idx: label for idx, label in enumerate(names)}
@@ -80,7 +84,10 @@ def count_labels(labels_dir: Path) -> Counter:
 
 
 def format_table(results: Dict[str, Counter], names: Dict[int, str]) -> str:
-    lines = ["Split\tTotal\t" + "\t".join(names.get(i, f"class_{i}") for i in sorted(names.keys()))]
+    lines = [
+        "Split\tTotal\t"
+        + "\t".join(names.get(i, f"class_{i}") for i in sorted(names.keys()))
+    ]
     for split, counts in results.items():
         total = sum(counts.values())
         row = [split, str(total)]
@@ -92,7 +99,9 @@ def format_table(results: Dict[str, Counter], names: Dict[int, str]) -> str:
 
 def emit_csv(results: Dict[str, Counter], names: Dict[int, str]) -> None:
     writer = csv.writer(sys.stdout)
-    header = ["split", "total"] + [names.get(i, f"class_{i}") for i in sorted(names.keys())]
+    header = ["split", "total"] + [
+        names.get(i, f"class_{i}") for i in sorted(names.keys())
+    ]
     writer.writerow(header)
     for split, counts in results.items():
         total = sum(counts.values())
@@ -106,7 +115,9 @@ def main() -> None:
     splits, names = load_config(data_config)
 
     if not splits:
-        raise SystemExit("No splits found in config; ensure train/val/test are defined.")
+        raise SystemExit(
+            "No splits found in config; ensure train/val/test are defined."
+        )
 
     all_results: Dict[str, Counter] = {}
     for split_name, split_path in splits.items():

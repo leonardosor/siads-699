@@ -117,7 +117,7 @@ class OCRProcessor:
             image_bytes = image_data
 
         return Image.open(io.BytesIO(image_bytes))
- 
+
     def _yolo_detect_text_regions(self, image):
         """
         Use YOLO to detect text regions in image
@@ -137,7 +137,7 @@ class OCRProcessor:
 
             img_array = np.array(image)
             # Use the device that was detected during initialization (cpu or cuda)
-            device = getattr(self, 'yolo_device', 'cpu')
+            device = getattr(self, "yolo_device", "cpu")
             results = self.yolo_model(img_array, conf=0.25, device=device)
 
             text_regions = []
@@ -226,7 +226,11 @@ class OCRProcessor:
             Dictionary with OCR results
         """
         start_time = time.time()
-        result = {"label": label, "timestamp": datetime.now().isoformat(), "methods": {}}
+        result = {
+            "label": label,
+            "timestamp": datetime.now().isoformat(),
+            "methods": {},
+        }
 
         try:
             image = self._extract_image_from_row(image_data)
@@ -276,7 +280,9 @@ class OCRProcessor:
 
                             if ocr_id and "words" in result["methods"]["tesseract"]:
                                 self._insert_ocr_words(
-                                    conn, ocr_id, result["methods"]["tesseract"]["words"]
+                                    conn,
+                                    ocr_id,
+                                    result["methods"]["tesseract"]["words"],
                                 )
 
                         if (
@@ -287,7 +293,9 @@ class OCRProcessor:
 
                             if yolo_id:
                                 self._insert_yolo_regions(
-                                    conn, yolo_id, result["methods"]["yolo"]["text_regions"]
+                                    conn,
+                                    yolo_id,
+                                    result["methods"]["yolo"]["text_regions"],
                                 )
 
                         conn.commit()
@@ -527,7 +535,9 @@ class OCRProcessor:
                     else 0
                 )
                 simplified_df["yolo_regions"] = simplified_df["methods"].apply(
-                    lambda x: x.get("yolo", {}).get("num_regions", 0) if isinstance(x, dict) else 0
+                    lambda x: x.get("yolo", {}).get("num_regions", 0)
+                    if isinstance(x, dict)
+                    else 0
                 )
                 simplified_df = simplified_df.drop(columns=["methods"])
             simplified_df.to_csv(output_file, index=False)
@@ -549,7 +559,9 @@ class OCRProcessor:
 
         if "methods" in results_df.columns:
             tesseract_texts = results_df["methods"].apply(
-                lambda x: x.get("tesseract", {}).get("full_text", "") if isinstance(x, dict) else ""
+                lambda x: x.get("tesseract", {}).get("full_text", "")
+                if isinstance(x, dict)
+                else ""
             )
             non_empty_texts = tesseract_texts[tesseract_texts.str.len() > 0]
 
@@ -566,7 +578,9 @@ class OCRProcessor:
             print(f"  Average confidence: {avg_confidences.mean():.1f}%")
 
             yolo_regions = results_df["methods"].apply(
-                lambda x: x.get("yolo", {}).get("num_regions", 0) if isinstance(x, dict) else 0
+                lambda x: x.get("yolo", {}).get("num_regions", 0)
+                if isinstance(x, dict)
+                else 0
             )
             if yolo_regions.sum() > 0:
                 print(f"\nYOLO Text Detection:")

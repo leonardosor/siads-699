@@ -52,19 +52,31 @@ def summarize_run(run_dir: Path) -> Dict[str, Optional[str]]:
 
 def print_table(rows: List[Dict[str, Optional[str]]]) -> None:
     headers = [
-        "run", "best_pt", "results",
-        "epochs", "map50", "map50_95", "precision", "recall"
+        "run",
+        "best_pt",
+        "results",
+        "epochs",
+        "map50",
+        "map50_95",
+        "precision",
+        "recall",
     ]
-    col_widths = {h: max(len(h), *(len(str(r.get(h, ""))) for r in rows)) for h in headers}
+    col_widths = {
+        h: max(len(h), *(len(str(r.get(h, ""))) for r in rows)) for h in headers
+    }
     header_line = "  ".join(h.ljust(col_widths[h]) for h in headers)
     print(header_line)
     print("-" * len(header_line))
     for row in rows:
-        print("  ".join(str(row.get(h, "") or "").ljust(col_widths[h]) for h in headers))
+        print(
+            "  ".join(str(row.get(h, "") or "").ljust(col_widths[h]) for h in headers)
+        )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="List YOLO run metadata under models/runs.")
+    parser = argparse.ArgumentParser(
+        description="List YOLO run metadata under models/runs."
+    )
     parser.add_argument(
         "--runs-dir",
         default="models/runs",
@@ -94,7 +106,16 @@ def main() -> None:
         import csv as _csv
 
         writer = _csv.writer(sys.stdout)
-        headers = ["run", "best_pt", "results", "epochs", "map50", "map50_95", "precision", "recall"]
+        headers = [
+            "run",
+            "best_pt",
+            "results",
+            "epochs",
+            "map50",
+            "map50_95",
+            "precision",
+            "recall",
+        ]
         writer.writerow(headers)
         for row in summaries:
             writer.writerow([row.get(h, "") or "" for h in headers])
