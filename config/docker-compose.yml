@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 699-devcontainer
+    volumes:
+      - .:/workspace:cached
+      - devcontainer-bashhistory:/commandhistory
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - PYTHONPATH=${PYTHONPATH}
+      - TESSDATA_PREFIX=${TESSDATA_PREFIX}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
+      - HISTFILE=${HISTFILE}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: sleep infinity
+    stdin_open: true
+    tty: true
+    networks:
+      - devnet
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - devnet
+
+volumes:
+  postgres-data: {}
+  devcontainer-bashhistory: {}
+
+networks:
+  devnet: {}
