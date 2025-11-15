@@ -105,3 +105,19 @@ temp/
 *.tmp
 *.bak
 *.backup
+
+# AI/Coding Agents
+.aider*
+.cursor/
+.continue/
+.codeium/
+.copilot/
+.tabnine/
+.github-copilot/
+agent_workspace/
+agent_logs/
+ai_context/
+.ai/
+.codex/
+.anthropic/
+.openai/

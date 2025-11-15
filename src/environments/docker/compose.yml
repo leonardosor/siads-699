@@ -2,16 +2,16 @@ name: capstone
 services:
   app:
     build:
-      context: ../..
-      dockerfile: src/docker/Dockerfile
+      context: ../../..
+      dockerfile: src/environments/docker/Dockerfile
     ports:
       - "${APP_PORT:-8501}:8501"
     volumes:
-      - ../../models:/app/models:ro
-      - ../../src:/app/src
+      - ../../../models:/app/models:ro
+      - ../../../src:/app/src
       - app_output:/app/output
     environment:
-      MODEL_PATH: ${MODEL_PATH:-/app/models/best.pt}
+      MODEL_PATH: ${MODEL_PATH:-/app/models/trained/best.pt}
       POSTGRES_HOST: db
       POSTGRES_PORT: ${DB_PORT:-5432}
       POSTGRES_DB: ${POSTGRES_DB:-appdb}
@@ -38,7 +38,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-appdb}
     volumes:
       - ${PGDATA_VOLUME:-pgdata}:/var/lib/postgresql/data
-      - ../../src/scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ../../../src/database/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL","pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-appdb}"]
       interval: 10s

@@ -13,7 +13,15 @@
       "Bash(tree:*)",
       "Bash(git -C \"d:/docs/MADS/699\" status --short)",
       "Bash(docker ps:*)",
-      "Bash(docker-compose down:*)"
+      "Bash(docker-compose down:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(PRE_COMMIT_ALLOW_NO_CONFIG=1 git commit:*)",
+      "Bash(git mv:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker volume:*)",
+      "Bash(docker logs:*)",
+      "Bash(unset:*)"
     ],
     "deny": [],
     "ask": []

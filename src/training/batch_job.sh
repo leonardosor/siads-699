@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-PROJECT_ROOT=${PROJECT_ROOT:-/home/${USER}/siads-699/models/yolov8-run}
+PROJECT_ROOT=${PROJECT_ROOT:-/home/${USER}/siads-699}
 RUN_NAME=${RUN_NAME:-finance-parser-$(date +%Y%m%d_%H%M%S)}
 EPOCHS=${EPOCHS:-150}
 BATCH=${BATCH:-4}
@@ -20,8 +20,8 @@ IMGSZ=${IMGSZ:-1024}
 PATIENCE=${PATIENCE:-60}
 HYPERPARAMS=${HYPERPARAMS:-"--mosaic 0 --cache"}
 
-RUNS_DIR="${PROJECT_ROOT}/runs/detect"
-ARTIFACT_DIR="${PROJECT_ROOT}/artifacts"
+RUNS_DIR="${PROJECT_ROOT}/models/runs"
+ARTIFACT_DIR="${PROJECT_ROOT}/models/artifacts"
 
 echo "Starting YOLOv8 training job: ${RUN_NAME}"
 if [[ -n ":${CUDA_MODULE:-}:" && "${CUDA_MODULE:-}" != ":" ]]; then
@@ -42,16 +42,16 @@ cd "${PROJECT_ROOT}"
 echo "Python executable: $(which python)"
 python -c "import torch; print('Torch', torch.__version__, 'CUDA:', torch.cuda.is_available())"
 
-python src/train.py \
-  --weights models/yolov8n.pt \
-  --data-config src/finance-image-parser.yaml \
+python src/training/train.py \
+  --weights models/pretrained/yolov8n.pt \
+  --data-config src/training/finance-image-parser.yaml \
   --epochs "${EPOCHS}" \
   --batch "${BATCH}" \
   --imgsz "${IMGSZ}" \
   --device 0 \
   --workers 4 \
   --patience "${PATIENCE}" \
-  --project runs/detect \
+  --project models/runs \
   --name "${RUN_NAME}" \
   --cos-lr \
   --clean-broken \

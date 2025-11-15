@@ -11,11 +11,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY src/docker/requirements.txt /tmp/requirements.txt
+COPY src/environments/requirements-prod.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt
 
-COPY src/streamlit /app/src/streamlit
+COPY src/web /app/src/web
 
-ENV MODEL_PATH=/app/models/yolov8n.pt
+ENV MODEL_PATH=/app/models/trained/best.pt
 EXPOSE 8501
-CMD ["bash","-lc","streamlit run /app/src/streamlit/streamlit_application.py --server.port=8501 --server.address=0.0.0.0"]
+CMD ["bash","-lc","streamlit run /app/src/web/streamlit_application.py --server.port=8501 --server.address=0.0.0.0"]

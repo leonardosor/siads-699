@@ -46,12 +46,12 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 
 REMOTE_USER=${REMOTE_USER:-joehiggi}
 REMOTE_HOST=${REMOTE_HOST:-greatlakes.arc-ts.umich.edu}
-REMOTE_PROJECT=${REMOTE_PROJECT:-/home/${REMOTE_USER}/siads-699/models/yolov8-run}
-REMOTE_PATH="${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PROJECT}/runs/detect/${RUN_NAME}/"
+REMOTE_PROJECT=${REMOTE_PROJECT:-/home/${REMOTE_USER}/siads-699}
+REMOTE_PATH="${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PROJECT}/models/runs/${RUN_NAME}/"
 
 LOCAL_RUNS_DIR=${LOCAL_RUNS_DIR:-${REPO_ROOT}/models/runs}
 LOCAL_RUN_PATH="${LOCAL_RUNS_DIR}/${RUN_NAME}"
@@ -63,8 +63,8 @@ rsync -av --progress "${REMOTE_PATH}" "${LOCAL_RUN_PATH}"
 
 if [[ ${COPY_BEST} -eq 1 ]]; then
   BEST_SRC="${LOCAL_RUN_PATH}/weights/best.pt"
-  BEST_DST="${REPO_ROOT}/models/best.pt"
-  ACTIVE_FILE="${REPO_ROOT}/models/active_run.txt"
+  BEST_DST="${REPO_ROOT}/models/trained/best.pt"
+  ACTIVE_FILE="${REPO_ROOT}/models/trained/active_run.txt"
   if [[ -f "${BEST_SRC}" ]]; then
     cp "${BEST_SRC}" "${BEST_DST}"
     echo "Updated ${BEST_DST} from ${BEST_SRC}"
@@ -78,7 +78,7 @@ if [[ ${RESTART_STREAMLIT} -eq 1 ]]; then
   if command -v docker >/dev/null 2>&1; then
     echo "Rebuilding Streamlit image and restarting containers..."
     pushd "${REPO_ROOT}" >/dev/null
-    docker compose -f src/docker/compose.yml up --build --remove-orphans -d
+    docker compose -f src/environments/docker/compose.yml up --build --remove-orphans -d
     popd >/dev/null
     echo "Streamlit is rebuilding with the new weights."
   else

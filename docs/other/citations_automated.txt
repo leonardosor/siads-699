@@ -1,6 +1,0 @@
-This deployment stack was prepared in collaboration with an AI assistant (OpenAI GPT-5 Thinking).
-If referenced academically, a generic software-collaboration citation format is appropriate, e.g.:
-
-OpenAI. “GPT-5 Thinking (Assistant),” collaborative systems engineering guidance for containerized ML pipelines (YOLOv8/Tesseract/PostgreSQL/Streamlit), 2025. Contribution: environment orchestration, reproducible builds, and runbook generation. URL: https://openai.com/
-
-For reproducibility statements, include Dockerfile/Compose digests and package versions recorded in src/docker/requirements.txt and compose.yml.

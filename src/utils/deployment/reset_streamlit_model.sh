@@ -43,11 +43,11 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 BASELINE_RUN=${BASELINE_RUN:-finance-image-parser4}
-BASELINE_DEFAULT="${REPO_ROOT}/models/runs/${BASELINE_RUN}/weights/best.pt"
+BASELINE_DEFAULT="${REPO_ROOT}/models/archive/${BASELINE_RUN}/weights/best.pt"
 SOURCE_WEIGHTS=${WEIGHTS_OVERRIDE:-${BASELINE_DEFAULT}}
-TARGET_WEIGHTS="${REPO_ROOT}/models/best.pt"
+TARGET_WEIGHTS="${REPO_ROOT}/models/trained/best.pt"
 
 if [[ ! -f "${SOURCE_WEIGHTS}" ]]; then
   echo "Baseline weights not found at ${SOURCE_WEIGHTS}."
@@ -61,7 +61,7 @@ echo "Restored ${TARGET_WEIGHTS} from ${SOURCE_WEIGHTS}"
 if [[ ${RESTART_STREAMLIT} -eq 1 ]]; then
   if command -v docker >/dev/null 2>&1; then
     pushd "${REPO_ROOT}" >/dev/null
-    docker compose -f src/docker/compose.yml up --build --remove-orphans -d
+    docker compose -f src/environments/docker/compose.yml up --build --remove-orphans -d
     popd >/dev/null
     echo "Streamlit containers restarted with the baseline model."
   else
