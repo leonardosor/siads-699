@@ -9,7 +9,7 @@ Usage: reset_streamlit_model.sh [--weights <path>] [--no-restart]
 
 Defaults:
   BASELINE_RUN     : finance-image-parser4
-  BASELINE_WEIGHTS : models/runs/${BASELINE_RUN}/weights/best.pt
+  BASELINE_WEIGHTS : models/experiments/archived/${BASELINE_RUN}/weights/best.pt
 
 Examples:
   ./src/scripts/reset_streamlit_model.sh
@@ -45,9 +45,9 @@ done
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 BASELINE_RUN=${BASELINE_RUN:-finance-image-parser4}
-BASELINE_DEFAULT="${REPO_ROOT}/models/archive/${BASELINE_RUN}/weights/best.pt"
+BASELINE_DEFAULT="${REPO_ROOT}/models/experiments/archived/${BASELINE_RUN}/weights/best.pt"
 SOURCE_WEIGHTS=${WEIGHTS_OVERRIDE:-${BASELINE_DEFAULT}}
-TARGET_WEIGHTS="${REPO_ROOT}/models/trained/best.pt"
+TARGET_WEIGHTS="${REPO_ROOT}/models/production/best.pt"
 
 if [[ ! -f "${SOURCE_WEIGHTS}" ]]; then
   echo "Baseline weights not found at ${SOURCE_WEIGHTS}."

@@ -10,8 +10,10 @@ class TestOCRProcessor:
         """Test that OCR processor can be imported."""
         try:
             import sys
+
             sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
             from processing import ocr_processor
+
             assert ocr_processor is not None
         except ImportError as e:
             pytest.skip(f"OCR processor not available: {e}")
@@ -40,7 +42,7 @@ class TestYOLORegionExtraction:
         """Test cropping regions based on YOLO labels."""
         # TODO: Implement region cropping test
         assert sample_image is not None
-        assert len(sample_yolo_label.strip().split('\n')) == 2
+        assert len(sample_yolo_label.strip().split("\n")) == 2
 
     def test_bbox_conversion(self):
         """Test YOLO to pixel coordinate conversion."""

@@ -7,7 +7,7 @@ class TestDatasetUtils:
 
     def test_yolo_label_parsing(self, sample_yolo_label):
         """Test parsing YOLO label format."""
-        lines = sample_yolo_label.strip().split('\n')
+        lines = sample_yolo_label.strip().split("\n")
         assert len(lines) == 2
 
         # Parse first line

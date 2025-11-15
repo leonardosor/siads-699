@@ -108,7 +108,7 @@ temp/
 
 # AI/Coding Agents
 .aider*
-.claude*
+.claude/
 .cursor/
 .continue/
 .codeium/

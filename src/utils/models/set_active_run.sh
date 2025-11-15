@@ -11,10 +11,10 @@ fi
 
 RUN_NAME=$1
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-RUN_DIR="${REPO_ROOT}/models/runs/${RUN_NAME}"
+RUN_DIR="${REPO_ROOT}/models/experiments/active/${RUN_NAME}"
 BEST_SRC="${RUN_DIR}/weights/best.pt"
-BEST_DST="${REPO_ROOT}/models/trained/best.pt"
-ACTIVE_FILE="${REPO_ROOT}/models/trained/active_run.txt"
+BEST_DST="${REPO_ROOT}/models/production/best.pt"
+ACTIVE_FILE="${REPO_ROOT}/models/production/active_run.txt"
 
 if [[ ! -f "${BEST_SRC}" ]]; then
   echo "Error: ${BEST_SRC} not found. Make sure the run has been synced locally."

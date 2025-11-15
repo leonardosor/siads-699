@@ -9,7 +9,8 @@ class TestTrainingConfig:
     def test_yaml_config_loading(self, temp_dir):
         """Test loading YAML configuration files."""
         config_path = temp_dir / "test_config.yaml"
-        config_path.write_text("""
+        config_path.write_text(
+            """
 path: data/raw/rvl-cdip-invoice
 train: train
 val: val
@@ -19,7 +20,8 @@ names:
   0: header
   1: body
   2: footer
-""")
+"""
+        )
         assert config_path.exists()
         # TODO: Implement actual config loading test
 
@@ -29,11 +31,14 @@ names:
         # TODO: Implement path validation logic
         assert isinstance(data_path, Path)
 
-    @pytest.mark.parametrize("epochs,batch_size", [
-        (10, 8),
-        (50, 16),
-        (100, 32),
-    ])
+    @pytest.mark.parametrize(
+        "epochs,batch_size",
+        [
+            (10, 8),
+            (50, 16),
+            (100, 32),
+        ],
+    )
     def test_training_hyperparameters(self, epochs, batch_size):
         """Test various training hyperparameter combinations."""
         assert epochs > 0
@@ -80,9 +85,11 @@ class TestMetricsTracking:
     def test_results_csv_format(self, temp_dir):
         """Test results.csv output format."""
         results_path = temp_dir / "results.csv"
-        results_path.write_text("epoch,train_loss,val_loss,precision,recall,mAP50\n1,0.5,0.4,0.8,0.7,0.75\n")
+        results_path.write_text(
+            "epoch,train_loss,val_loss,precision,recall,mAP50\n1,0.5,0.4,0.8,0.7,0.75\n"
+        )
 
         assert results_path.exists()
-        lines = results_path.read_text().strip().split('\n')
+        lines = results_path.read_text().strip().split("\n")
         assert len(lines) == 2  # Header + 1 data row
         assert lines[0].startswith("epoch")

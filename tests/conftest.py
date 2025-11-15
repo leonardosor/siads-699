@@ -15,7 +15,7 @@ def temp_dir():
 @pytest.fixture
 def sample_image():
     """Create a sample image for testing."""
-    img = Image.new('RGB', (640, 480), color='white')
+    img = Image.new("RGB", (640, 480), color="white")
     return img
 
 

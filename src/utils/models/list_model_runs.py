@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize archived YOLO runs under models/runs."""
+"""Summarize archived YOLO runs under models/experiments/active."""
 
 from __future__ import annotations
 
@@ -75,12 +75,12 @@ def print_table(rows: List[Dict[str, Optional[str]]]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="List YOLO run metadata under models/runs."
+        description="List YOLO run metadata under models/experiments/active."
     )
     parser.add_argument(
         "--runs-dir",
-        default="models/runs",
-        help="Path to the runs directory (default: models/runs).",
+        default="models/experiments/active",
+        help="Path to the runs directory (default: models/experiments/active).",
     )
     parser.add_argument(
         "--csv",

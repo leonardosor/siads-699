@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Sync a YOLOv8 run from Great Lakes into models/runs/, optionally refresh
-# models/best.pt, and restart Streamlit so the new weights take effect.
+# Sync a YOLOv8 run from Great Lakes into models/experiments/active/, optionally refresh
+# models/production/best.pt, and restart Streamlit so the new weights take effect.
 
 set -euo pipefail
 
@@ -51,9 +51,9 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 REMOTE_USER=${REMOTE_USER:-joehiggi}
 REMOTE_HOST=${REMOTE_HOST:-greatlakes.arc-ts.umich.edu}
 REMOTE_PROJECT=${REMOTE_PROJECT:-/home/${REMOTE_USER}/siads-699}
-REMOTE_PATH="${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PROJECT}/models/runs/${RUN_NAME}/"
+REMOTE_PATH="${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PROJECT}/models/experiments/active/${RUN_NAME}/"
 
-LOCAL_RUNS_DIR=${LOCAL_RUNS_DIR:-${REPO_ROOT}/models/runs}
+LOCAL_RUNS_DIR=${LOCAL_RUNS_DIR:-${REPO_ROOT}/models/experiments/active}
 LOCAL_RUN_PATH="${LOCAL_RUNS_DIR}/${RUN_NAME}"
 
 mkdir -p "${LOCAL_RUNS_DIR}"
@@ -63,8 +63,8 @@ rsync -av --progress "${REMOTE_PATH}" "${LOCAL_RUN_PATH}"
 
 if [[ ${COPY_BEST} -eq 1 ]]; then
   BEST_SRC="${LOCAL_RUN_PATH}/weights/best.pt"
-  BEST_DST="${REPO_ROOT}/models/trained/best.pt"
-  ACTIVE_FILE="${REPO_ROOT}/models/trained/active_run.txt"
+  BEST_DST="${REPO_ROOT}/models/production/best.pt"
+  ACTIVE_FILE="${REPO_ROOT}/models/production/active_run.txt"
   if [[ -f "${BEST_SRC}" ]]; then
     cp "${BEST_SRC}" "${BEST_DST}"
     echo "Updated ${BEST_DST} from ${BEST_SRC}"

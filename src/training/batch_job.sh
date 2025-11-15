@@ -20,7 +20,7 @@ IMGSZ=${IMGSZ:-1024}
 PATIENCE=${PATIENCE:-60}
 HYPERPARAMS=${HYPERPARAMS:-"--mosaic 0 --cache"}
 
-RUNS_DIR="${PROJECT_ROOT}/models/runs"
+RUNS_DIR="${PROJECT_ROOT}/models/experiments/active"
 ARTIFACT_DIR="${PROJECT_ROOT}/models/artifacts"
 
 echo "Starting YOLOv8 training job: ${RUN_NAME}"
@@ -47,13 +47,8 @@ python src/training/train.py \
   --data-config src/training/finance-image-parser.yaml \
   --epochs "${EPOCHS}" \
   --batch "${BATCH}" \
-  --imgsz "${IMGSZ}" \
   --device 0 \
-  --workers 4 \
-  --patience "${PATIENCE}" \
-  --project models/runs \
   --name "${RUN_NAME}" \
-  --cos-lr \
   --clean-broken \
   ${HYPERPARAMS}
 
