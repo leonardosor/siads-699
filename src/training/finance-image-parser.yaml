@@ -1,6 +1,7 @@
-train: ../data/input/training
-val: ../data/input/validation
-test: ../data/input/testing
+path: ../../data/input
+train: training
+val: validation
+test: testing
 
 names:
   - header

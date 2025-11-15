@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=10G
 #SBATCH --time=01:00:00
-#SBATCH --mail-user=joehiggi@umich.edu
+#SBATCH --mail-user=lcedeno@umich.edu
 #SBATCH --mail-type=END,FAIL
 #SBATCH --output=/home/%u/%x-%j.log
 

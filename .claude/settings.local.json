@@ -21,7 +21,10 @@
       "Bash(docker-compose:*)",
       "Bash(docker volume:*)",
       "Bash(docker logs:*)",
-      "Bash(unset:*)"
+      "Bash(unset:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(test -f models/pretrained/yolov8n.pt)"
     ],
     "deny": [],
     "ask": []

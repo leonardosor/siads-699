@@ -108,6 +108,7 @@ temp/
 
 # AI/Coding Agents
 .aider*
+.claude*
 .cursor/
 .continue/
 .codeium/
@@ -121,3 +122,27 @@ ai_context/
 .codex/
 .anthropic/
 .openai/
+
+# Project-specific ignores
+# Keep .env.example files
+!.env.example
+!**/.env.example
+
+# Model artifacts directory (compressed runs)
+models/artifacts/*.tar.gz
+models/artifacts/*.zip
+
+# Keep only README and .gitkeep in empty directories
+!models/artifacts/.gitkeep
+
+# Training output
+data/output/
+
+# Notebook outputs
+notebooks/*.html
+notebooks/*.pdf
+
+# Keep dataset README
+!data/raw/rvl-cdip-invoice/README.md
+
+*png*

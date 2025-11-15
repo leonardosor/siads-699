@@ -4,20 +4,35 @@ This directory contains environment configurations for different deployment targ
 
 ## Requirements Files
 
-### `requirements-prod.txt`
-Production deployment requirements for CPU-based inference (minimal dependencies):
-- PyTorch CPU version
-- Streamlit for web interface
-- Core OCR and ML libraries
-- Use this for Docker deployments
+The project uses a **hierarchical requirements structure** to avoid duplication:
 
-### `requirements-dev.txt`
-Full development environment with GPU support:
-- PyTorch with CUDA support
+```
+requirements.txt           ← Base dependencies (shared)
+├── requirements-prod.txt  ← Production (extends base + CPU PyTorch)
+└── requirements-dev.txt   ← Development (extends base + GPU PyTorch + dev tools)
+```
+
+### `requirements.txt` (Base)
+Core dependencies shared across all environments:
+- OCR & PDF processing (pytesseract, pdf2image, pdfplumber)
+- Data science libraries (numpy, pandas, scipy)
+- Web framework (Streamlit)
+- Database (PostgreSQL)
+- Utilities (requests, pyyaml, optuna)
+
+### `requirements-prod.txt` (Production)
+Extends base with CPU-only PyTorch for production deployment:
+- PyTorch CPU version (smaller, faster for inference)
+- Minimal footprint for Docker containers
+- **Use this for Docker deployments**
+
+### `requirements-dev.txt` (Development)
+Extends base with GPU support and development tools:
+- PyTorch with CUDA support (for training)
 - Development tools (jupyter, pytest, black, ruff)
-- Complete ML stack (scikit-learn, seaborn, tensorboard)
-- Data processing libraries
-- Use this for local development and training
+- Visualization (matplotlib, seaborn, tensorboard)
+- Data processing (polars, pyarrow)
+- **Use this for local development and training**
 
 ## Directory Structure
 
@@ -52,4 +67,32 @@ conda env create -f conda/great-lakes-env.yml
 ```bash
 cd docker/
 docker-compose up
+```
+
+## Benefits of Hierarchical Structure
+
+1. **No Duplication** - Core dependencies defined once in `requirements.txt`
+2. **Easy Maintenance** - Update shared dependencies in one place
+3. **Clear Separation** - Production vs development requirements clearly separated
+4. **Flexible** - Easy to add new environment variants (e.g., requirements-test.txt)
+
+## Troubleshooting
+
+### Dependency Conflicts
+If you encounter version conflicts:
+```bash
+# Clean install
+pip uninstall -y -r requirements-dev.txt
+pip install -r requirements-dev.txt
+```
+
+### CUDA Issues (Development)
+If PyTorch doesn't detect your GPU:
+```bash
+python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
+```
+
+If False, reinstall with explicit CUDA version:
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 ```
