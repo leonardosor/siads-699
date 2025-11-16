@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
@@ -19,12 +20,16 @@ import yaml
 from ultralytics import YOLO
 from PIL import Image
 
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from utils.common import find_repo_root
+
 # Fix for PyTorch 2.6+ weights_only=True default
 # Monkey-patch ultralytics to use weights_only=False for torch.load
 try:
     import ultralytics.nn.tasks as tasks_module
     original_torch_safe_load = tasks_module.torch_safe_load
-    
+
     def patched_torch_safe_load(weight):
         """Patched version that uses weights_only=False for YOLOv8 compatibility."""
         file = weight
@@ -32,41 +37,13 @@ try:
         if isinstance(file, (str, Path)) and not Path(file).exists():
             return original_torch_safe_load(weight)
         return torch.load(file, map_location='cpu', weights_only=False), file
-    
+
     tasks_module.torch_safe_load = patched_torch_safe_load
 except (ImportError, AttributeError):
     pass  # Older PyTorch/Ultralytics versions
 
 
-# Determine repo root: traverse up until we find the directory containing 'src/', 'data/', 'models/'
-
-def _find_repo_root() -> Path:
-    """
-    Navigates up from the current file's directory to find the repository root.
-    The repository root is identified by the presence of 'src/', 'data/', and 'models/' directories.
-    A special case is added for the Docker environment where the root is '/app'.
-    """
-    current_path = Path(__file__).resolve()
-
-    # Handle Docker environment
-    if "DOCKER_ENV" in os.environ or str(current_path).startswith("/app"):
-        # Inside Docker, the structure is /app/src, /app/data, etc.
-        # So, we need to find the '/app' directory.
-        for parent in current_path.parents:
-            if parent.name == "app":
-                return parent
-
-    # Original logic for non-Docker environments
-    for parent in current_path.parents:
-        if (parent / "src").is_dir() and (parent / "data").is_dir() and (parent / "models").is_dir():
-            return parent
-
-    raise RuntimeError(
-        "Could not find repository root. Expected to find 'src/', 'data/', and 'models/' directories."
-    )
-
-
-REPO_ROOT = _find_repo_root()
+REPO_ROOT = find_repo_root()
 SRC_DIR = REPO_ROOT / "src"
 DATA_DIR = REPO_ROOT / "data"
 MODELS_DIR = REPO_ROOT / "models"

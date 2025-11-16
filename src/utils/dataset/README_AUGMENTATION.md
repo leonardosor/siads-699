@@ -6,6 +6,19 @@ This guide explains how to prepare your training dataset using ONLY the 100 grou
 
 The current training dataset contains ~16,000 images extracted from parquet files with generic full-image bounding boxes. This workflow replaces that dataset with augmented versions of your 100 high-quality ground-truth annotated images.
 
+## Unified Dataset Preparation Script
+
+All dataset preparation workflows are now consolidated into a single script with subcommands:
+
+```bash
+python src/utils/dataset/prepare_dataset.py <mode> [options]
+```
+
+Modes:
+- `groundtruth` - Split ground-truth images (no augmentation)
+- `augmented` - Generate augmented dataset (recommended)
+- `parquet` - Extract from parquet files
+
 ## Quick Start
 
 ### 1. Prepare Augmented Dataset
@@ -13,18 +26,20 @@ The current training dataset contains ~16,000 images extracted from parquet file
 Run the augmentation script to generate enhanced versions of your ground-truth images:
 
 ```bash
-# Basic usage (50 augmentations per image, ~5,000 total samples)
-python src/utils/dataset/prepare_augmented_groundtruth.py
+# Basic usage (50 augmentations per image, ~5,000 total samples) - RECOMMENDED
+python src/utils/dataset/prepare_dataset.py augmented
 
 # More augmentations for larger dataset (100 augmentations = ~10,000 samples)
-python src/utils/dataset/prepare_augmented_groundtruth.py --augmentations-per-image 100
+python src/utils/dataset/prepare_dataset.py augmented --augmentations-per-image 100
 
 # Include original images + augmentations
-python src/utils/dataset/prepare_augmented_groundtruth.py --keep-originals
+python src/utils/dataset/prepare_dataset.py augmented --keep-originals
 
 # Backup existing data before replacing
-python src/utils/dataset/prepare_augmented_groundtruth.py --backup-existing
+python src/utils/dataset/prepare_dataset.py augmented --backup-existing
 ```
+
+> **Note**: Old scripts (`prepare_augmented_groundtruth.py`, etc.) still work as wrappers for backward compatibility.
 
 ### 2. Verify the Dataset
 
@@ -54,7 +69,7 @@ python src/training/train.py --optimize --n-trials 20 --epochs 50
 
 ## Script Options
 
-### `prepare_augmented_groundtruth.py`
+### `prepare_dataset.py augmented`
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -67,6 +82,18 @@ python src/training/train.py --optimize --n-trials 20 --epochs 50
 | `--keep-originals` | False | Include original images in addition to augmentations |
 | `--backup-existing` | False | Backup existing training data before replacing |
 | `--seed` | `42` | Random seed for reproducibility |
+
+### Other Modes
+
+**`prepare_dataset.py groundtruth`** - Simple split without augmentation:
+```bash
+python src/utils/dataset/prepare_dataset.py groundtruth [options]
+```
+
+**`prepare_dataset.py parquet`** - Extract from parquet files:
+```bash
+python src/utils/dataset/prepare_dataset.py parquet --raw-dir data/raw [options]
+```
 
 ## Augmentation Types
 
@@ -114,7 +141,7 @@ The script applies the following augmentations while preserving bounding box coo
 ### Local Training
 ```bash
 # 1. Prepare augmented dataset
-python src/utils/dataset/prepare_augmented_groundtruth.py --augmentations-per-image 100
+python src/utils/dataset/prepare_dataset.py augmented --augmentations-per-image 100
 
 # 2. Train locally
 python src/training/train.py --epochs 100 --batch 16 --cache
@@ -123,7 +150,7 @@ python src/training/train.py --epochs 100 --batch 16 --cache
 ### Great Lakes (HPC) Training
 ```bash
 # 1. Prepare dataset locally (or on Great Lakes)
-python src/utils/dataset/prepare_augmented_groundtruth.py --augmentations-per-image 100
+python src/utils/dataset/prepare_dataset.py augmented --augmentations-per-image 100
 
 # 2. Submit batch job
 sbatch src/training/batch_job.sh
@@ -156,7 +183,7 @@ cp -r data/input/validation data/input/validation_backup
 cp -r data/input/testing data/input/testing_backup
 
 # Or use the --backup-existing flag
-python src/utils/dataset/prepare_augmented_groundtruth.py --backup-existing
+python src/utils/dataset/prepare_dataset.py augmented --backup-existing
 ```
 
 ### Restore from Backup
@@ -185,6 +212,9 @@ After preparing your augmented dataset:
 
 ## Related Scripts
 
-- [prepare_groundtruth_splits.py](prepare_groundtruth_splits.py) - Split ground-truth without augmentation
+- [prepare_dataset.py](prepare_dataset.py) - **Main unified script** with all modes
 - [augment_dataset.py](augment_dataset.py) - General-purpose augmentation tool
-- [prepare_dataset_from_parquet.py](prepare_dataset_from_parquet.py) - Extract from parquet files (old workflow)
+- Legacy wrappers (backward compatible):
+  - [prepare_augmented_groundtruth.py](prepare_augmented_groundtruth.py) → wraps `prepare_dataset.py augmented`
+  - [prepare_groundtruth_splits.py](prepare_groundtruth_splits.py) → wraps `prepare_dataset.py groundtruth`
+  - [prepare_dataset_from_parquet.py](prepare_dataset_from_parquet.py) → wraps `prepare_dataset.py parquet`

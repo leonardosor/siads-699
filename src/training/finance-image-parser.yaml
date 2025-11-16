@@ -1,4 +1,4 @@
-path: ../../data/input
+path: /workspace/data/input
 train: training
 val: validation
 test: testing

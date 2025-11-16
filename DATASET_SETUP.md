@@ -8,22 +8,24 @@
 
 ### Step 1: Prepare Dataset (Choose One)
 
-**Option A: Standard (5,000 samples)**
+**Option A: Standard (5,000 samples)** - RECOMMENDED
 ```bash
-python src/utils/dataset/prepare_augmented_groundtruth.py
+python src/utils/dataset/prepare_dataset.py augmented
 ```
 
 **Option B: Large Dataset (10,000 samples)**
 ```bash
-python src/utils/dataset/prepare_augmented_groundtruth.py --augmentations-per-image 100
+python src/utils/dataset/prepare_dataset.py augmented --augmentations-per-image 100
 ```
 
 **Option C: With Backup**
 ```bash
-python src/utils/dataset/prepare_augmented_groundtruth.py \
+python src/utils/dataset/prepare_dataset.py augmented \
   --augmentations-per-image 100 \
   --backup-existing
 ```
+
+> **Note**: The old scripts (`prepare_augmented_groundtruth.py`, `prepare_groundtruth_splits.py`, `prepare_dataset_from_parquet.py`) are now wrappers for backward compatibility. Use `prepare_dataset.py` for new workflows.
 
 ### Step 2: Verify Dataset
 ```bash
@@ -86,8 +88,27 @@ python src/training/train.py --optimize --n-trials 20 --epochs 50
 📚 [Training Guide](src/training/README.md)
 📚 [Quick Reference](src/training/QUICK_REFERENCE.md)
 
-## Old Workflow (Deprecated)
+## Unified Dataset Preparation Script
 
-❌ Don't use: `prepare_dataset_from_parquet.py` - Creates generic bounding boxes
-❌ Don't use: Raw parquet data - Not suitable for region detection
-✅ Use: `prepare_augmented_groundtruth.py` - Uses proper annotations
+The new `prepare_dataset.py` consolidates all dataset preparation workflows:
+
+```bash
+# Simple split (no augmentation)
+python src/utils/dataset/prepare_dataset.py groundtruth
+
+# Augmented dataset (recommended)
+python src/utils/dataset/prepare_dataset.py augmented --augmentations-per-image 50
+
+# Extract from parquet files
+python src/utils/dataset/prepare_dataset.py parquet --raw-dir data/raw
+```
+
+## Old Workflow (Deprecated but Still Works)
+
+The old scripts are now wrappers for backward compatibility:
+- `prepare_augmented_groundtruth.py` → wraps `prepare_dataset.py augmented`
+- `prepare_groundtruth_splits.py` → wraps `prepare_dataset.py groundtruth`
+- `prepare_dataset_from_parquet.py` → wraps `prepare_dataset.py parquet`
+
+✅ **Use**: `prepare_dataset.py` with subcommands for new workflows
+⚠️  **Legacy**: Old scripts still work but show compatibility notice

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import os
+import sys
 from pathlib import Path
 from typing import List, Tuple
 
@@ -13,8 +14,9 @@ from ultralytics import YOLO
 import pytesseract
 import json
 
-UM_BLUE = "#00274C"
-UM_MAIZE = "#FFCB05"
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from utils.common import UM_BLUE, UM_MAIZE
 _model_env = os.getenv("MODEL_PATH")
 DEFAULT_MODEL_PATH = (
     Path(_model_env)
@@ -179,7 +181,12 @@ def _bytes_to_image(data: bytes, filename: str = "") -> List[Image.Image]:
     """Convert uploaded file bytes to PIL Images. Returns list to handle multi-page PDFs."""
     if filename.lower().endswith(".pdf"):
         # Convert PDF to images (one image per page)
-        images = convert_from_bytes(data, dpi=200)
+        # Specify poppler_path if it's not in PATH (adjust path as needed)
+        poppler_path = os.getenv("POPPLER_PATH")  # Set via environment variable
+        if poppler_path:
+            images = convert_from_bytes(data, dpi=200, poppler_path=poppler_path)
+        else:
+            images = convert_from_bytes(data, dpi=200)
         return [img.convert("RGB") for img in images]
     else:
         # Single image file

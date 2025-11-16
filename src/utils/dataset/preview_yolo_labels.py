@@ -4,14 +4,16 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 from typing import List
 
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
-UM_BLUE = "#00274C"
-UM_MAIZE = "#FFCB05"
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from common import UM_BLUE, UM_MAIZE
 
 
 def parse_args() -> argparse.Namespace:
