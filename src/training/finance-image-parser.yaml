@@ -1,4 +1,4 @@
-path: /workspace/data/input
+path: /home/lcedeno/699/siads-699/data/input
 train: training
 val: validation
 test: testing

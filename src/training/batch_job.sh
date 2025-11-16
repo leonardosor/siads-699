@@ -12,19 +12,19 @@
 
 set -euo pipefail
 
-PROJECT_ROOT=${PROJECT_ROOT:-/home/${USER}/siads-699}
+PROJECT_ROOT=${PROJECT_ROOT:-/home/${USER}/699/siads-699}
 RUN_NAME=${RUN_NAME:-finance-parser-$(date +%Y%m%d_%H%M%S)}
 EPOCHS=${EPOCHS:-150}
 BATCH=${BATCH:-4}
 IMGSZ=${IMGSZ:-1024}
 PATIENCE=${PATIENCE:-60}
-HYPERPARAMS=${HYPERPARAMS:-"--mosaic 0 --cache"}
+HYPERPARAMS=${HYPERPARAMS:-"--cache"}
 
 RUNS_DIR="${PROJECT_ROOT}/models/experiments/active"
 ARTIFACT_DIR="${PROJECT_ROOT}/models/artifacts"
 
 echo "Starting YOLOv8 training job: ${RUN_NAME}"
-if [[ -n ":${CUDA_MODULE:-}:" && "${CUDA_MODULE:-}" != ":" ]]; then
+if [[ -n "${CUDA_MODULE:-}" ]]; then
   echo "Loading CUDA module ${CUDA_MODULE}"
   module load "${CUDA_MODULE}" || echo "Warning: failed to load ${CUDA_MODULE}; continuing without explicit CUDA module"
 fi
@@ -34,7 +34,7 @@ if module list 2>&1 | grep -qi "python"; then
 fi
 module load mamba/py3.12
 source /sw/pkgs/arc/mamba/py3.12/etc/profile.d/conda.sh
-conda activate yolov8-env
+conda activate capstone 
 
 mkdir -p "${RUNS_DIR}" "${ARTIFACT_DIR}"
 cd "${PROJECT_ROOT}"
