@@ -1,22 +1,24 @@
 from __future__ import annotations
 
 import io
+import json
 import os
 import sys
 from pathlib import Path
 from typing import List, Tuple
 
 import pandas as pd
+import pytesseract
 import streamlit as st
 from pdf2image import convert_from_bytes
 from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
-import pytesseract
-import json
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from utils.common import UM_BLUE, UM_MAIZE
+from utils.ocr_enhancement import extract_text_from_bbox as enhanced_extract_text
+
 _model_env = os.getenv("MODEL_PATH")
 DEFAULT_MODEL_PATH = (
     Path(_model_env)
@@ -44,7 +46,7 @@ def _load_font(size: int = 18) -> ImageFont.FreeTypeFont:
 
 
 def _extract_text_from_bbox(
-    image: Image.Image, bbox: Tuple[float, float, float, float]
+    image: Image.Image, bbox: Tuple[float, float, float, float], enhanced: bool = True
 ) -> dict:
     """
     Extract text from a specific bounding box region using Tesseract OCR
@@ -52,43 +54,61 @@ def _extract_text_from_bbox(
     Args:
         image: PIL Image
         bbox: Tuple of (x1, y1, x2, y2) coordinates
+        enhanced: Whether to use enhanced OCR with preprocessing (slower but more accurate)
 
     Returns:
         Dictionary with extracted text and confidence
     """
     try:
-        x1, y1, x2, y2 = bbox
-        # Add small padding around the box to improve OCR accuracy
-        padding = 5
-        x1 = max(0, int(x1) - padding)
-        y1 = max(0, int(y1) - padding)
-        x2 = min(image.width, int(x2) + padding)
-        y2 = min(image.height, int(y2) + padding)
+        if enhanced:
+            # Use enhanced OCR with preprocessing and multi-method approach
+            result = enhanced_extract_text(image, bbox, enhanced=True)
+            return {
+                "text": result.get("text", ""),
+                "ocr_confidence": result.get("confidence", 0),
+                "word_count": result.get("word_count", 0),
+                "method": result.get("method", ""),
+                "psm_mode": result.get("psm_mode", ""),
+            }
+        else:
+            # Original fast method (legacy)
+            x1, y1, x2, y2 = bbox
+            # Add small padding around the box to improve OCR accuracy
+            padding = 5
+            x1 = max(0, int(x1) - padding)
+            y1 = max(0, int(y1) - padding)
+            x2 = min(image.width, int(x2) + padding)
+            y2 = min(image.height, int(y2) + padding)
 
-        # Crop the region
-        cropped = image.crop((x1, y1, x2, y2))
+            # Crop the region
+            cropped = image.crop((x1, y1, x2, y2))
 
-        # Extract text using Tesseract
-        text = pytesseract.image_to_string(cropped, config="--psm 6").strip()
+            # Extract text using Tesseract
+            text = pytesseract.image_to_string(cropped, config="--psm 6").strip()
 
-        # Get confidence scores
-        data = pytesseract.image_to_data(cropped, output_type=pytesseract.Output.DICT)
-        confidences = [
-            int(conf) for conf in data["conf"] if conf != "-1" and int(conf) > 0
-        ]
-        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+            # Get confidence scores
+            data = pytesseract.image_to_data(
+                cropped, output_type=pytesseract.Output.DICT
+            )
+            confidences = [
+                int(conf) for conf in data["conf"] if conf != "-1" and int(conf) > 0
+            ]
+            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
 
-        return {
-            "text": text,
-            "ocr_confidence": avg_confidence,
-            "word_count": len([w for w in text.split() if w]),
-        }
+            return {
+                "text": text,
+                "ocr_confidence": avg_confidence,
+                "word_count": len([w for w in text.split() if w]),
+            }
     except Exception as e:
         return {"text": "", "ocr_confidence": 0, "word_count": 0, "error": str(e)}
 
 
 def _format_detections(
-    result, image: Image.Image = None, extract_text: bool = False
+    result,
+    image: Image.Image = None,
+    extract_text: bool = False,
+    enhanced_ocr: bool = True,
 ) -> pd.DataFrame:
     boxes = getattr(result, "boxes", None)
     if boxes is None or len(boxes) == 0:
@@ -124,10 +144,13 @@ def _format_detections(
         # Extract text if requested and image is provided
         if extract_text and image is not None:
             bbox = (coords[0], coords[1], coords[2], coords[3])
-            ocr_result = _extract_text_from_bbox(image, bbox)
+            ocr_result = _extract_text_from_bbox(image, bbox, enhanced=enhanced_ocr)
             row_data["extracted_text"] = ocr_result["text"]
             row_data["ocr_confidence"] = ocr_result["ocr_confidence"]
             row_data["word_count"] = ocr_result["word_count"]
+            if enhanced_ocr:
+                row_data["ocr_method"] = ocr_result.get("method", "")
+                row_data["ocr_psm_mode"] = ocr_result.get("psm_mode", "")
 
         rows.append(row_data)
 
@@ -168,11 +191,17 @@ def _annotate_umich(image: Image.Image, detections: pd.DataFrame) -> Image.Image
 
 
 def _run_inference(
-    image: Image.Image, confidence: float, iou: float, extract_text: bool = True
+    image: Image.Image,
+    confidence: float,
+    iou: float,
+    extract_text: bool = True,
+    enhanced_ocr: bool = True,
 ) -> Tuple[Image.Image, pd.DataFrame]:
     model = load_model(DEFAULT_MODEL_PATH)
     result = model.predict(image, conf=confidence, iou=iou, verbose=False)[0]
-    detections = _format_detections(result, image=image, extract_text=extract_text)
+    detections = _format_detections(
+        result, image=image, extract_text=extract_text, enhanced_ocr=enhanced_ocr
+    )
     annotated = _annotate_umich(image, detections)
     return annotated, detections
 
@@ -223,6 +252,17 @@ def main() -> None:
             help="Use Tesseract OCR to extract text from each detected bounding box",
         )
 
+        enhanced_ocr = st.checkbox(
+            "Enhanced OCR (slower, more accurate)",
+            value=True,
+            help="Use advanced preprocessing and multi-method OCR for better accuracy. Disable for faster processing.",
+        )
+
+        if enhanced_ocr:
+            st.info(
+                "Enhanced OCR uses image preprocessing, upscaling, and tests multiple PSM modes for best results."
+            )
+
         st.write("Weights file:")
         st.code(str(DEFAULT_MODEL_PATH))
 
@@ -256,7 +296,11 @@ def main() -> None:
             )
             with st.spinner(spinner_text):
                 annotated, detections = _run_inference(
-                    raw_image, confidence, iou, extract_text=extract_text
+                    raw_image,
+                    confidence,
+                    iou,
+                    extract_text=extract_text,
+                    enhanced_ocr=enhanced_ocr,
                 )
 
             if detections.empty:

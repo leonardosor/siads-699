@@ -3,22 +3,28 @@ OCR Processor using Ultralytics YOLO and Tesseract
 Processes images from parquet files and extracts text using multiple OCR methods
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from PIL import Image
 import io
-import pytesseract
-from ultralytics import YOLO
-import cv2
-from tqdm import tqdm
 import json
 import os
-from datetime import datetime
-from sqlalchemy import create_engine, text
+import sys
 import time
 import uuid
+from datetime import datetime
+from pathlib import Path
+
+import cv2
+import numpy as np
+import pandas as pd
+import pytesseract
 import torch
+from PIL import Image
+from sqlalchemy import create_engine, text
+from tqdm import tqdm
+from ultralytics import YOLO
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from utils.ocr_enhancement import OCREnhancer
 
 
 class OCRProcessor:
@@ -32,6 +38,7 @@ class OCRProcessor:
         use_tesseract=True,
         save_to_db=True,
         database_url=None,
+        enhanced_ocr=True,
     ):
         """
         Initialize OCR Processor
@@ -43,6 +50,7 @@ class OCRProcessor:
             use_tesseract: Whether to use Tesseract for OCR
             save_to_db: Whether to save results to PostgreSQL database
             database_url: Database connection URL (defaults to env var)
+            enhanced_ocr: Whether to use enhanced OCR with preprocessing (slower but more accurate)
         """
         self.parquet_dir = Path(parquet_dir)
         self.output_dir = Path(output_dir)
@@ -50,6 +58,7 @@ class OCRProcessor:
         self.use_yolo_ocr = use_yolo_ocr
         self.use_tesseract = use_tesseract
         self.save_to_db = save_to_db
+        self.enhanced_ocr = enhanced_ocr
 
         self.db_engine = None
         if self.save_to_db:
@@ -58,6 +67,9 @@ class OCRProcessor:
         self.yolo_model = None
         if self.use_yolo_ocr:
             self._initialize_yolo()
+
+        # Initialize OCR enhancer if using enhanced mode
+        self.ocr_enhancer = OCREnhancer() if enhanced_ocr else None
 
     def _initialize_database(self, database_url):
         """Initialize database connection"""
@@ -175,35 +187,81 @@ class OCRProcessor:
             if image.mode not in ["RGB", "L", "RGBA"]:
                 image = image.convert("RGB")
 
-            data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
-            full_text = pytesseract.image_to_string(image)
+            if self.enhanced_ocr and self.ocr_enhancer:
+                # Use enhanced OCR with preprocessing
+                result = self.ocr_enhancer.extract_text_enhanced(
+                    image, bbox=None, use_multi_method=True, padding=15
+                )
 
-            confidences = [int(conf) for conf in data["conf"] if conf != "-1"]
-            avg_confidence = np.mean(confidences) if confidences else 0
+                # Get word-level data using the best preprocessing method
+                best_method = result.get("method", "adaptive")
+                processed = self.ocr_enhancer.preprocess_image(
+                    image, method=best_method
+                )
+                processed = self.ocr_enhancer.enhance_contrast(processed, factor=1.5)
 
-            words = []
-            n_boxes = len(data["text"])
-            for i in range(n_boxes):
-                if int(data["conf"][i]) > 0:
-                    word = {
-                        "text": data["text"][i],
-                        "confidence": int(data["conf"][i]),
-                        "bbox": [
-                            data["left"][i],
-                            data["top"][i],
-                            data["left"][i] + data["width"][i],
-                            data["top"][i] + data["height"][i],
-                        ],
-                    }
-                    if word["text"].strip():
-                        words.append(word)
+                data = pytesseract.image_to_data(
+                    processed, output_type=pytesseract.Output.DICT
+                )
 
-            return {
-                "full_text": full_text.strip(),
-                "words": words,
-                "avg_confidence": float(avg_confidence),
-                "total_words": len(words),
-            }
+                words = []
+                n_boxes = len(data["text"])
+                for i in range(n_boxes):
+                    if int(data["conf"][i]) > 0:
+                        word = {
+                            "text": data["text"][i],
+                            "confidence": int(data["conf"][i]),
+                            "bbox": [
+                                data["left"][i],
+                                data["top"][i],
+                                data["left"][i] + data["width"][i],
+                                data["top"][i] + data["height"][i],
+                            ],
+                        }
+                        if word["text"].strip():
+                            words.append(word)
+
+                return {
+                    "full_text": result.get("text", "").strip(),
+                    "words": words,
+                    "avg_confidence": float(result.get("confidence", 0)),
+                    "total_words": result.get("word_count", len(words)),
+                    "ocr_method": result.get("method", ""),
+                    "psm_mode": result.get("psm_mode", ""),
+                }
+            else:
+                # Original fast method
+                data = pytesseract.image_to_data(
+                    image, output_type=pytesseract.Output.DICT
+                )
+                full_text = pytesseract.image_to_string(image)
+
+                confidences = [int(conf) for conf in data["conf"] if conf != "-1"]
+                avg_confidence = np.mean(confidences) if confidences else 0
+
+                words = []
+                n_boxes = len(data["text"])
+                for i in range(n_boxes):
+                    if int(data["conf"][i]) > 0:
+                        word = {
+                            "text": data["text"][i],
+                            "confidence": int(data["conf"][i]),
+                            "bbox": [
+                                data["left"][i],
+                                data["top"][i],
+                                data["left"][i] + data["width"][i],
+                                data["top"][i] + data["height"][i],
+                            ],
+                        }
+                        if word["text"].strip():
+                            words.append(word)
+
+                return {
+                    "full_text": full_text.strip(),
+                    "words": words,
+                    "avg_confidence": float(avg_confidence),
+                    "total_words": len(words),
+                }
         except Exception as e:
             print(f"Error in Tesseract OCR: {e}")
             return {
