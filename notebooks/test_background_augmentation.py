@@ -4,6 +4,7 @@ Test script to demonstrate background color augmentation.
 """
 import sys
 from pathlib import Path
+
 import cv2
 
 # Add src/utils to path

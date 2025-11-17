@@ -7,6 +7,7 @@ Supports Optuna hyperparameter optimization for best model performance.
 from __future__ import annotations
 
 import argparse
+import gc
 import os
 import sys
 from datetime import datetime
@@ -17,8 +18,8 @@ import optuna
 import torch
 import torch.nn as nn
 import yaml
-from ultralytics import YOLO
 from PIL import Image
+from ultralytics import YOLO
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -28,6 +29,7 @@ from utils.common import find_repo_root
 # Monkey-patch ultralytics to use weights_only=False for torch.load
 try:
     import ultralytics.nn.tasks as tasks_module
+
     original_torch_safe_load = tasks_module.torch_safe_load
 
     def patched_torch_safe_load(weight):
@@ -36,7 +38,7 @@ try:
         # Check if file exists, if not let original function handle it (will download)
         if isinstance(file, (str, Path)) and not Path(file).exists():
             return original_torch_safe_load(weight)
-        return torch.load(file, map_location='cpu', weights_only=False), file
+        return torch.load(file, map_location="cpu", weights_only=False), file
 
     tasks_module.torch_safe_load = patched_torch_safe_load
 except (ImportError, AttributeError):
@@ -178,6 +180,14 @@ def clean_corrupt_images(image_dirs: Iterable[Path]) -> None:
         print(f"Removed {removed} corrupt image(s) total.\n")
 
 
+def clear_gpu_memory() -> None:
+    """Clear GPU memory cache to prevent memory leaks and CUDA errors."""
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+    gc.collect()
+
+
 def validate_dataset(splits: Dict[str, Path], verbose: bool = True) -> int:
     """Validate dataset splits and count images before training."""
     total_images = 0
@@ -243,36 +253,79 @@ def create_objective(
         hsv_v = trial.suggest_float("hsv_v", 0.0, 0.6)
         mixup = trial.suggest_float("mixup", 0.0, 0.3)
 
-        # Train model
-        model = YOLO(str(weights_path))
-        results = model.train(
-            data=str(data_config_path),
-            epochs=epochs,
-            batch=batch,
-            device=device,
-            project=str(project_dir),
-            name=f"trial_{trial.number}",
-            lr0=lr0,
-            lrf=lrf,
-            momentum=momentum,
-            weight_decay=weight_decay,
-            optimizer=optimizer,
-            mosaic=mosaic,
-            fliplr=fliplr,
-            degrees=degrees,
-            hsv_h=hsv_h,
-            hsv_s=hsv_s,
-            hsv_v=hsv_v,
-            mixup=mixup,
-            cache=cache,
-            verbose=False,
-            patience=20,
-            save=False,
-            plots=False,
-        )
+        try:
+            # Clear GPU memory before starting
+            clear_gpu_memory()
 
-        # Return validation mAP50-95 as objective
-        return float(results.results_dict.get("metrics/mAP50-95(B)", 0.0))
+            # Train model
+            model = YOLO(str(weights_path))
+            results = model.train(
+                data=str(data_config_path),
+                epochs=epochs,
+                batch=batch,
+                device=device,
+                project=str(project_dir),
+                name=f"trial_{trial.number}",
+                lr0=lr0,
+                lrf=lrf,
+                momentum=momentum,
+                weight_decay=weight_decay,
+                optimizer=optimizer,
+                mosaic=mosaic,
+                fliplr=fliplr,
+                degrees=degrees,
+                hsv_h=hsv_h,
+                hsv_s=hsv_s,
+                hsv_v=hsv_v,
+                mixup=mixup,
+                cache=cache,
+                verbose=False,
+                patience=20,
+                save=False,
+                plots=False,
+            )
+
+            # Get validation mAP50-95 as objective
+            map_value = float(results.results_dict.get("metrics/mAP50-95(B)", 0.0))
+
+            # Clear GPU memory after training
+            del model
+            del results
+            clear_gpu_memory()
+
+            return map_value
+
+        except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
+            # Handle CUDA errors gracefully
+            error_msg = str(e)
+            print(f"\nTrial {trial.number} failed with parameters: {trial.params}")
+            print(f"Error: {error_msg}\n")
+
+            # Clear GPU memory after error
+            clear_gpu_memory()
+
+            # Store error info in trial user attributes
+            trial.set_user_attr("error", error_msg)
+            trial.set_user_attr("error_type", type(e).__name__)
+
+            # Raise the exception to mark trial as failed
+            # Optuna will catch it and continue with next trial
+            raise
+
+        except Exception as e:
+            # Handle other unexpected errors
+            error_msg = str(e)
+            print(f"\nTrial {trial.number} failed with unexpected error: {error_msg}\n")
+
+            # Clear GPU memory after error
+            clear_gpu_memory()
+
+            # Store error info
+            trial.set_user_attr("error", error_msg)
+            trial.set_user_attr("error_type", type(e).__name__)
+
+            # Raise the exception
+            raise
 
     return objective
 
@@ -393,12 +446,39 @@ def main() -> None:
             args.cache,
         )
 
-        study.optimize(objective, n_trials=args.n_trials)
+        # Optimize with exception catching to continue after CUDA errors
+        study.optimize(
+            objective,
+            n_trials=args.n_trials,
+            catch=(Exception,),  # Catch all exceptions and continue with next trial
+            gc_after_trial=True,  # Run garbage collection after each trial
+        )
 
         print("\n" + "=" * 70)
         print("OPTIMIZATION COMPLETE")
         print("=" * 70)
-        print(f"Best mAP50-95: {study.best_value:.4f}")
+
+        # Check if we have any completed trials
+        completed_trials = [
+            t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE
+        ]
+        failed_trials = [
+            t for t in study.trials if t.state == optuna.trial.TrialState.FAIL
+        ]
+
+        print(f"Completed trials: {len(completed_trials)}")
+        print(f"Failed trials: {len(failed_trials)}")
+
+        if not completed_trials:
+            print("\nWARNING: All trials failed! No model was successfully trained.")
+            print("Please check the errors above and fix the issues.")
+            print("Common causes:")
+            print("  - CUDA out of memory (try reducing batch size)")
+            print("  - CUDA errors (try restarting or updating GPU drivers)")
+            print("  - Invalid hyperparameter combinations")
+            return
+
+        print(f"\nBest mAP50-95: {study.best_value:.4f}")
         print("\nBest Hyperparameters:")
         for k, v in study.best_params.items():
             print(f"  {k:15s}: {v}")

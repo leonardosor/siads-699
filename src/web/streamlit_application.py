@@ -266,6 +266,13 @@ def main() -> None:
         st.write("Weights file:")
         st.code(str(DEFAULT_MODEL_PATH))
 
+        if st.button(
+            "🔄 Reload Model", help="Clear cache and reload model weights from disk"
+        ):
+            st.cache_resource.clear()
+            st.success("Model cache cleared! Reloading...")
+            st.rerun()
+
     uploads = st.file_uploader(
         "Upload one or more JPG/PNG/PDF files",
         type=ALLOWED_TYPES,
@@ -367,9 +374,42 @@ def main() -> None:
                 and "extracted_text" in detections.columns
                 and len(detections) > 0
             ):
-                col1, col2 = st.columns(2)
+                col1, col2, col3 = st.columns(3)
 
                 with col1:
+                    # Text download - clean formatted text only
+                    text_buffer = io.StringIO()
+                    text_buffer.write(f"Extracted Text from {uploaded.name}\n")
+                    if len(images) > 1:
+                        text_buffer.write(f"Page {page_num} of {len(images)}\n")
+                    text_buffer.write("=" * 60 + "\n\n")
+
+                    for _, row in detections.iterrows():
+                        if (
+                            row["extracted_text"]
+                            and len(row["extracted_text"].strip()) > 0
+                        ):
+                            text_buffer.write(f"[{row['label'].upper()}]\n")
+                            text_buffer.write(f"{row['extracted_text']}\n")
+                            text_buffer.write(
+                                f"(Confidence: {row['confidence']:.1%}, OCR: {row['ocr_confidence']:.1f}%)\n"
+                            )
+                            text_buffer.write("-" * 60 + "\n\n")
+
+                    text_filename = (
+                        f"{Path(uploaded.name).stem}_page{page_num}_extracted_text.txt"
+                        if len(images) > 1
+                        else f"{Path(uploaded.name).stem}_extracted_text.txt"
+                    )
+                    st.download_button(
+                        label="📥 Download Extracted Text",
+                        data=text_buffer.getvalue(),
+                        file_name=text_filename,
+                        mime="text/plain",
+                        key=f"txt-{uploaded.name}-page{page_num}",
+                    )
+
+                with col2:
                     # CSV download
                     csv_buffer = io.StringIO()
                     detections.to_csv(csv_buffer, index=False)
@@ -379,14 +419,14 @@ def main() -> None:
                         else f"{Path(uploaded.name).stem}_ocr_results.csv"
                     )
                     st.download_button(
-                        label="📥 Download OCR Results (CSV)",
+                        label="📥 Download CSV",
                         data=csv_buffer.getvalue(),
                         file_name=csv_filename,
                         mime="text/csv",
                         key=f"csv-{uploaded.name}-page{page_num}",
                     )
 
-                with col2:
+                with col3:
                     # JSON download
                     json_data = detections.to_dict(orient="records")
                     json_filename = (
@@ -395,7 +435,7 @@ def main() -> None:
                         else f"{Path(uploaded.name).stem}_ocr_results.json"
                     )
                     st.download_button(
-                        label="📥 Download OCR Results (JSON)",
+                        label="📥 Download JSON",
                         data=json.dumps(json_data, indent=2),
                         file_name=json_filename,
                         mime="application/json",

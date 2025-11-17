@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-BASELINE_RUN=${BASELINE_RUN:-finance-image-parser4}
+BASELINE_RUN=${BASELINE_RUN:-finance-image-parser-}
 BASELINE_DEFAULT="${REPO_ROOT}/models/experiments/archived/${BASELINE_RUN}/weights/best.pt"
 SOURCE_WEIGHTS=${WEIGHTS_OVERRIDE:-${BASELINE_DEFAULT}}
 TARGET_WEIGHTS="${REPO_ROOT}/models/production/best.pt"

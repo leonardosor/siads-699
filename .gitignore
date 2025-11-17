@@ -118,6 +118,8 @@ ai_context/
 .codex/
 .anthropic/
 .openai/
+.kiro/
+*claude*
 
 # Project-specific ignores
 # Keep .env.example files
@@ -142,3 +144,8 @@ notebooks/*.pdf
 !data/raw/rvl-cdip-invoice/README.md
 
 *png*
+
+# Large files
+transfer_model.tar.gz
+*.tar.gz
+notebooks/yolo_experiments_analysis.ipynb

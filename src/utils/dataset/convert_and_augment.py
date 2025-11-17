@@ -17,6 +17,7 @@ import numpy as np
 # COCO TO YOLO CONVERSION
 # ========================================================================
 
+
 def coco_to_yolo(bbox, img_width, img_height):
     """Convert COCO bbox to YOLO format"""
     x_min, y_min, width, height = bbox
@@ -85,8 +86,12 @@ def convert_coco_to_yolo_labels(coco_json_path, images_dir):
 
             yolo_class_id = class_mapping[category_id]
             bbox = ann["bbox"]
-            x_center, y_center, width, height = coco_to_yolo(bbox, img_width, img_height)
-            yolo_labels.append(f"{yolo_class_id} {x_center:.6f} {y_center:.6f} {width:.6f} {height:.6f}")
+            x_center, y_center, width, height = coco_to_yolo(
+                bbox, img_width, img_height
+            )
+            yolo_labels.append(
+                f"{yolo_class_id} {x_center:.6f} {y_center:.6f} {width:.6f} {height:.6f}"
+            )
 
         if not yolo_labels:
             continue
@@ -106,6 +111,7 @@ def convert_coco_to_yolo_labels(coco_json_path, images_dir):
 # ========================================================================
 # DATA AUGMENTATION
 # ========================================================================
+
 
 class BoundingBox:
     def __init__(self, class_id, x_center, y_center, width, height):
@@ -183,7 +189,9 @@ def horizontal_flip(img, boxes):
     flipped_img = cv2.flip(img, 1)
     flipped_boxes = []
     for box in boxes:
-        new_box = BoundingBox(box.class_id, 1.0 - box.x_center, box.y_center, box.width, box.height)
+        new_box = BoundingBox(
+            box.class_id, 1.0 - box.x_center, box.y_center, box.width, box.height
+        )
         flipped_boxes.append(new_box)
     return flipped_img, flipped_boxes
 
@@ -197,18 +205,35 @@ def rotate_image_90(img, boxes, k=1):
         x_min, y_min, x_max, y_max = box.to_corners(w, h)
 
         if k == 1:  # 90° CW
-            new_x_min, new_y_min, new_x_max, new_y_max = y_min, w - x_max, y_max, w - x_min
+            new_x_min, new_y_min, new_x_max, new_y_max = (
+                y_min,
+                w - x_max,
+                y_max,
+                w - x_min,
+            )
             new_w, new_h = h, w
         elif k == 2:  # 180°
-            new_x_min, new_y_min, new_x_max, new_y_max = w - x_max, h - y_max, w - x_min, h - y_min
+            new_x_min, new_y_min, new_x_max, new_y_max = (
+                w - x_max,
+                h - y_max,
+                w - x_min,
+                h - y_min,
+            )
             new_w, new_h = w, h
         elif k == 3:  # 270° CW
-            new_x_min, new_y_min, new_x_max, new_y_max = h - y_max, x_min, h - y_min, x_max
+            new_x_min, new_y_min, new_x_max, new_y_max = (
+                h - y_max,
+                x_min,
+                h - y_min,
+                x_max,
+            )
             new_w, new_h = h, w
         else:
             continue
 
-        new_box = BoundingBox.from_corners(box.class_id, new_x_min, new_y_min, new_x_max, new_y_max, new_w, new_h)
+        new_box = BoundingBox.from_corners(
+            box.class_id, new_x_min, new_y_min, new_x_max, new_y_max, new_w, new_h
+        )
         rotated_boxes.append(new_box)
 
     return rotated_img, rotated_boxes
@@ -219,7 +244,9 @@ def adjust_brightness_contrast(img, alpha=1.0, beta=0):
 
 
 def apply_random_augmentation(img, boxes):
-    aug_type = random.choice(["hflip", "rot90", "rot180", "rot270", "bright", "dark", "contrast"])
+    aug_type = random.choice(
+        ["hflip", "rot90", "rot180", "rot270", "bright", "dark", "contrast"]
+    )
 
     if aug_type == "hflip":
         return *horizontal_flip(img, boxes), "hflip"
@@ -239,7 +266,9 @@ def apply_random_augmentation(img, boxes):
     return img, boxes, "none"
 
 
-def augment_dataset(input_dir, output_dir, augmentations_per_image=5, copy_originals=True, seed=42):
+def augment_dataset(
+    input_dir, output_dir, augmentations_per_image=5, copy_originals=True, seed=42
+):
     random.seed(seed)
     np.random.seed(seed)
 
@@ -324,6 +353,7 @@ def augment_dataset(input_dir, output_dir, augmentations_per_image=5, copy_origi
 # MAIN
 # ========================================================================
 
+
 def main():
     print("\n" + "=" * 70)
     print("DATASET AUGMENTATION PIPELINE")
@@ -348,7 +378,7 @@ def main():
         output_dir,
         augmentations_per_image=5,
         copy_originals=True,
-        seed=42
+        seed=42,
     )
 
     print("\n✓ All done! Your augmented dataset is ready for training.")

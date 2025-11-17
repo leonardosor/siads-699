@@ -65,6 +65,73 @@ RUN_NAME=my-custom-run sbatch src/training/batch_job.sh
 ### Advanced Arguments
 - `--lr0` - Initial learning rate (default: 0.01)
 - `--lrf` - Final learning rate factor (default: 0.01)
+# Model Training
+
+This directory contains scripts and configurations for training YOLOv8 models on financial document datasets.
+
+## Files
+
+- **train.py** - Production training script with full CLI argument support
+- **batch_job.sh** - SLURM batch job for Great Lakes HPC cluster
+- **finance-image-parser.yaml** - Dataset configuration for YOLOv8
+
+## Quick Start
+
+### Local Training (CPU/GPU)
+
+```bash
+# Basic training
+python src/training/train.py \
+  --weights models/pretrained/yolov8n.pt \
+  --data-config src/training/finance-image-parser.yaml \
+  --epochs 50 \
+  --batch 8 \
+  --imgsz 640 \
+  --project models/runs \
+  --name my-experiment
+
+# With GPU
+python src/training/train.py \
+  --weights models/pretrained/yolov8n.pt \
+  --data-config src/training/finance-image-parser.yaml \
+  --epochs 150 \
+  --batch 16 \
+  --imgsz 1024 \
+  --device 0 \
+  --project models/runs \
+  --name finance-high-res
+```
+
+### Great Lakes HPC Training
+
+```bash
+# Default configuration (150 epochs, batch=4, imgsz=1024)
+sbatch src/training/batch_job.sh
+
+# Custom configuration
+EPOCHS=200 BATCH=8 IMGSZ=640 sbatch src/training/batch_job.sh
+
+# With custom run name
+RUN_NAME=my-custom-run sbatch src/training/batch_job.sh
+```
+
+## Training Script Arguments
+
+### Required Arguments
+- `--weights` - Path to pretrained weights (e.g., models/pretrained/yolov8n.pt)
+- `--data-config` - Path to dataset YAML (e.g., src/training/finance-image-parser.yaml)
+
+### Common Arguments
+- `--epochs` - Number of training epochs (default: 100)
+- `--batch` - Batch size (default: 16)
+- `--imgsz` - Input image size (default: 640)
+- `--device` - Device to use (cpu, 0, 0,1,2,3) (default: 0 if GPU available)
+- `--project` - Output directory for runs (default: models/runs)
+- `--name` - Name of this training run (default: auto-generated)
+
+### Advanced Arguments
+- `--lr0` - Initial learning rate (default: 0.01)
+- `--lrf` - Final learning rate factor (default: 0.01)
 - `--momentum` - SGD momentum (default: 0.937)
 - `--weight-decay` - Optimizer weight decay (default: 0.0005)
 - `--patience` - Early stopping patience in epochs (default: 50)
@@ -241,26 +308,122 @@ Contents:
 - **--mosaic 0.0**: Disabled - use if training images are very uniform
 - **--cache**: Cache images in memory (faster but uses more RAM)
 
-## Troubleshooting
+## Quick Reference (merged)
 
-### Out of Memory (OOM)
-- Reduce `--batch` size
-- Reduce `--imgsz`
-- Reduce `--workers`
+This quick reference summarizes common commands and tips for training and deployment.
 
-### Training Too Slow
-- Increase `--batch` if GPU memory allows
-- Use `--cache` to cache images in memory
-- Reduce `--workers` if CPU is bottleneck
+### Standard Training (Good Defaults)
+```bash
+python src/training/train.py
+```
 
-### Poor Convergence
-- Increase `--patience` for more training time
-- Try `--cos-lr` for cosine learning rate schedule
-- Adjust `--lr0` (try 0.001 or 0.05)
+### Hyperparameter Optimization with Optuna
+```bash
+pip install optuna>=3.5.0
+python src/training/train.py --optimize --n-trials 20
+```
 
-### Corrupt Images Error
-- Use `--clean-broken` flag to auto-remove corrupt images
-- Or manually check with: `src/utils/dataset/count_yolo_labels.py`
+This will:
+1. Run 20 trials testing different hyperparameter combinations
+2. Track results in SQLite database (`models/runs/optuna_study.db`)
+3. Train final model with best parameters (3x epochs)
+
+### Custom Training Options
+```bash
+# Longer training
+python src/training/train.py --epochs 300
+
+# Enable caching for faster epochs
+python src/training/train.py --cache --epochs 200
+
+# Clean broken images first
+python src/training/train.py --clean-broken --cache
+
+# Custom device (CPU or multi-GPU)
+python src/training/train.py --device cpu
+python src/training/train.py --device 0,1,2,3
+
+# Named run
+python src/training/train.py --name my-experiment-v1
+```
+
+### Optuna Optimization
+
+**Quick Optimization (Fast)**
+```bash
+python src/training/train.py --optimize --n-trials 10 --epochs 50
+```
+
+**Thorough Optimization (Best Results)**
+```bash
+python src/training/train.py --optimize --n-trials 50 --epochs 100 --cache
+```
+
+**Continue Previous Optimization**
+```bash
+# Optuna automatically resumes from the database
+python src/training/train.py --optimize --n-trials 30
+```
+
+### Parameters Being Optimized
+
+Optuna automatically tunes:
+- **Learning rate** (lr0, lrf)
+- **Optimizer** (SGD, Adam, AdamW)
+- **Batch size** (8, 16, 32)
+- **Momentum & weight decay**
+- **Augmentation** (mosaic, fliplr, rotation, HSV, mixup)
+
+### Deploy Best Model (quick)
+
+After training:
+```bash
+# Copy to production
+cp models/runs/finance-parser-*/weights/best.pt models/trained/best.pt
+
+# Update active run
+echo "finance-parser-20251115_143030" > models/trained/active_run.txt
+
+# Restart Streamlit (example using compose file)
+docker compose -f src/environments/docker/compose.yml restart app
+```
+
+### Output Structure
+
+```
+models/runs/
+├── optuna_study.db              # Optimization database
+├── trial_0/                     # First trial
+├── trial_1/                     # Second trial
+├── ...
+└── finance-parser-20251115_*/   # Final model with best params
+    ├── weights/
+    │   ├── best.pt
+    │   └── last.pt
+    └── results.csv
+```
+
+### Tips
+
+✅ Start with `--optimize --n-trials 20` for good hyperparameters
+✅ Use `--cache` to speed up repeated epochs
+✅ Use `--clean-broken` on first run
+✅ Increase `--n-trials` for better optimization (20-50 recommended)
+✅ Study database persists - you can continue optimization later
+
+### Troubleshooting (summary)
+
+**Out of Memory?**
+```bash
+# Reduce epochs per trial
+python src/training/train.py --optimize --epochs 30
+```
+
+**Want faster trials?**
+```bash
+# Use smaller epoch count for trials
+python src/training/train.py --optimize --n-trials 30 --epochs 50
+```
 
 ## Best Practices
 

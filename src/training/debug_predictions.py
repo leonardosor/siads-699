@@ -2,11 +2,12 @@
 """
 Debug script to see raw model predictions regardless of threshold.
 """
-from pathlib import Path
-from ultralytics import YOLO
-from PIL import Image
 import sys
 import tempfile
+from pathlib import Path
+
+from PIL import Image
+from ultralytics import YOLO
 
 if len(sys.argv) < 2:
     print("Usage: python debug_predictions.py <path_to_test_image_or_pdf>")
@@ -27,9 +28,10 @@ print("=" * 70)
 
 # Convert PDF to images if needed
 test_images = []
-if test_file_path.lower().endswith('.pdf'):
+if test_file_path.lower().endswith(".pdf"):
     try:
         from pdf2image import convert_from_path
+
         print("Converting PDF to images...")
         images = convert_from_path(test_file_path, dpi=200)
         print(f"  Extracted {len(images)} page(s)")
@@ -48,10 +50,7 @@ else:
 all_results = []
 for img in test_images:
     result = model.predict(
-        img,
-        conf=0.01,  # Very low threshold to see everything
-        iou=0.5,
-        verbose=False
+        img, conf=0.01, iou=0.5, verbose=False  # Very low threshold to see everything
     )
     all_results.extend(result)
 
