@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=30G
-#SBATCH --time=01:00:00  # Increase to 08:00:00 for Optuna optimization
+#SBATCH --time=04:00:00  # Increase to 08:00:00 for Optuna optimization
 #SBATCH --mail-user=lcedeno@umich.edu
 #SBATCH --mail-type=END,FAIL
 #SBATCH --output=/home/%u/%x-%j.log
@@ -36,10 +36,13 @@ fi
 if module list 2>&1 | grep -qi "python"; then
   module purge python >/dev/null 2>&1 || module unload python >/dev/null 2>&1 || true
 fi
+# Temporarily disable strict mode to avoid MKL_INTERFACE_LAYER unbound variable error
+set +u
 module load mamba/py3.12
 source /sw/pkgs/arc/mamba/py3.12/etc/profile.d/conda.sh
 eval "$(conda shell.bash hook)"
 conda activate capstone
+set -u
 
 mkdir -p "${RUNS_DIR}" "${ARTIFACT_DIR}"
 cd "${PROJECT_ROOT}"
