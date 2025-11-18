@@ -151,3 +151,8 @@ notebooks/*.pdf
 transfer_model.tar.gz
 *.tar.gz
 notebooks/yolo_experiments_analysis.ipynb
+
+# Text files (but keep requirements and packages)
+!requirements*.txt
+!packages.txt
+*.txt

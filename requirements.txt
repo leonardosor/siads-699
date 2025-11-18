@@ -1,0 +1,32 @@
+# SIADS 699 Capstone - Base Requirements
+# Core dependencies shared across all environments
+
+# Deep Learning & Computer Vision
+ultralytics==8.3.226
+opencv-python-headless==4.10.0.84
+
+# OCR & PDF Processing
+pytesseract>=0.3.10
+pdf2image>=1.16.3
+PyPDF2>=3.0.1
+pdfplumber>=0.10.3
+
+# Data Science & Analysis
+numpy>=1.24.3,<2.0
+pandas>=2.0.3
+scipy>=1.11.3
+tqdm>=4.66.1
+
+# Database
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.23
+
+# Web Application
+streamlit>=1.30.0
+pillow>=10.1.0
+
+# Utilities
+requests>=2.31.0
+pyyaml>=6.0.1
+python-dotenv>=1.0.0
+optuna>=3.5.0
