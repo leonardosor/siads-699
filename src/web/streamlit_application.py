@@ -273,7 +273,9 @@ def main() -> None:
     st.title(
         "University of Michigan \n Master of Applied Data Science - Capstone Project \nFinancial Form Text Extractor"
     )
-    st.caption("Upload a JPG/PNG/PDF to generate bounding boxes.")
+    st.caption(
+        "Upload a JPG/PNG/PDF from a financial form to generate bounding boxes and extract text using Optical Character Recognition (OCR)."
+    )
 
     if not DEFAULT_MODEL_PATH.exists():
         st.error(
