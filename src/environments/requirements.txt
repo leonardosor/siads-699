@@ -12,7 +12,7 @@ PyPDF2>=3.0.1
 pdfplumber>=0.10.3
 
 # Data Science & Analysis
-numpy>=1.24.3,<2.0
+numpy>=1.24.3
 pandas>=2.0.3
 scipy>=1.11.3
 tqdm>=4.66.1
