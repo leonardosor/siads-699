@@ -36,6 +36,7 @@ try:
     import pandas as pd
     from PIL import Image
     from tqdm import tqdm
+
     PANDAS_AVAILABLE = True
 except ImportError:
     PANDAS_AVAILABLE = False
@@ -44,16 +45,15 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from common import (
     BoundingBox,
+    add_gaussian_noise,
+    adjust_background_color,
+    adjust_brightness_contrast,
+    adjust_hsv,
     find_repo_root,
+    horizontal_flip,
     load_yolo_labels,
     save_yolo_labels,
-    horizontal_flip,
-    adjust_brightness_contrast,
-    add_gaussian_noise,
-    adjust_hsv,
-    adjust_background_color,
 )
-
 
 # ============================================================================
 # Common Utilities
@@ -374,9 +374,13 @@ def prepare_augmented(
 
     n_total = len(all_samples)
     print(f"Split sizes:")
-    print(f"  Training:   {len(train_samples):6d} ({len(train_samples)/n_total*100:.1f}%)")
+    print(
+        f"  Training:   {len(train_samples):6d} ({len(train_samples)/n_total*100:.1f}%)"
+    )
     print(f"  Validation: {len(val_samples):6d} ({len(val_samples)/n_total*100:.1f}%)")
-    print(f"  Testing:    {len(test_samples):6d} ({len(test_samples)/n_total*100:.1f}%)")
+    print(
+        f"  Testing:    {len(test_samples):6d} ({len(test_samples)/n_total*100:.1f}%)"
+    )
     print()
 
     # Save splits
@@ -642,9 +646,7 @@ Examples:
         action="store_true",
         help="Backup existing training data",
     )
-    groundtruth_parser.add_argument(
-        "--seed", type=int, default=42, help="Random seed"
-    )
+    groundtruth_parser.add_argument("--seed", type=int, default=42, help="Random seed")
 
     # ========================================================================
     # Augmented subcommand
@@ -690,9 +692,7 @@ Examples:
         action="store_true",
         help="Backup existing training data",
     )
-    augmented_parser.add_argument(
-        "--seed", type=int, default=42, help="Random seed"
-    )
+    augmented_parser.add_argument("--seed", type=int, default=42, help="Random seed")
 
     # ========================================================================
     # Parquet subcommand
@@ -733,9 +733,7 @@ Examples:
         action="store_true",
         help="Backup existing training data",
     )
-    parquet_parser.add_argument(
-        "--seed", type=int, default=42, help="Random seed"
-    )
+    parquet_parser.add_argument("--seed", type=int, default=42, help="Random seed")
 
     args = parser.parse_args()
 
@@ -753,7 +751,9 @@ Examples:
         output_dir = repo_root / args.output_dir
 
         if not ground_truth_dir.exists():
-            raise FileNotFoundError(f"Ground-truth directory not found: {ground_truth_dir}")
+            raise FileNotFoundError(
+                f"Ground-truth directory not found: {ground_truth_dir}"
+            )
 
         prepare_groundtruth(
             ground_truth_dir=ground_truth_dir,
@@ -770,7 +770,9 @@ Examples:
         output_dir = repo_root / args.output_dir
 
         if not ground_truth_dir.exists():
-            raise FileNotFoundError(f"Ground-truth directory not found: {ground_truth_dir}")
+            raise FileNotFoundError(
+                f"Ground-truth directory not found: {ground_truth_dir}"
+            )
 
         prepare_augmented(
             ground_truth_dir=ground_truth_dir,

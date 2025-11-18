@@ -1,8 +1,9 @@
 """Test GPU availability and configuration"""
 
+import sys
+
 import torch
 from ultralytics import YOLO
-import sys
 
 
 def test_gpu():

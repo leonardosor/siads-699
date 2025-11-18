@@ -1,6 +1,7 @@
-import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 class TestOCRProcessor:

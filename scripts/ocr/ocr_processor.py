@@ -3,22 +3,23 @@ OCR Processor using Ultralytics YOLO and Tesseract
 Processes images from parquet files and extracts text using multiple OCR methods
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from PIL import Image
 import io
-import pytesseract
-from ultralytics import YOLO
-import cv2
-from tqdm import tqdm
 import json
 import os
-from datetime import datetime
-from sqlalchemy import create_engine, text
 import time
 import uuid
+from datetime import datetime
+from pathlib import Path
+
+import cv2
+import numpy as np
+import pandas as pd
+import pytesseract
 import torch
+from PIL import Image
+from sqlalchemy import create_engine, text
+from tqdm import tqdm
+from ultralytics import YOLO
 
 
 class OCRProcessor:
@@ -221,7 +222,11 @@ class OCRProcessor:
             Dictionary with OCR results
         """
         start_time = time.time()
-        result = {"label": label, "timestamp": datetime.now().isoformat(), "methods": {}}
+        result = {
+            "label": label,
+            "timestamp": datetime.now().isoformat(),
+            "methods": {},
+        }
 
         try:
             image = self._extract_image_from_row(image_data)
@@ -271,7 +276,9 @@ class OCRProcessor:
 
                             if ocr_id and "words" in result["methods"]["tesseract"]:
                                 self._insert_ocr_words(
-                                    conn, ocr_id, result["methods"]["tesseract"]["words"]
+                                    conn,
+                                    ocr_id,
+                                    result["methods"]["tesseract"]["words"],
                                 )
 
                         if (
@@ -282,7 +289,9 @@ class OCRProcessor:
 
                             if yolo_id:
                                 self._insert_yolo_regions(
-                                    conn, yolo_id, result["methods"]["yolo"]["text_regions"]
+                                    conn,
+                                    yolo_id,
+                                    result["methods"]["yolo"]["text_regions"],
                                 )
 
                         conn.commit()
@@ -522,7 +531,9 @@ class OCRProcessor:
                     else 0
                 )
                 simplified_df["yolo_regions"] = simplified_df["methods"].apply(
-                    lambda x: x.get("yolo", {}).get("num_regions", 0) if isinstance(x, dict) else 0
+                    lambda x: x.get("yolo", {}).get("num_regions", 0)
+                    if isinstance(x, dict)
+                    else 0
                 )
                 simplified_df = simplified_df.drop(columns=["methods"])
             simplified_df.to_csv(output_file, index=False)
@@ -544,7 +555,9 @@ class OCRProcessor:
 
         if "methods" in results_df.columns:
             tesseract_texts = results_df["methods"].apply(
-                lambda x: x.get("tesseract", {}).get("full_text", "") if isinstance(x, dict) else ""
+                lambda x: x.get("tesseract", {}).get("full_text", "")
+                if isinstance(x, dict)
+                else ""
             )
             non_empty_texts = tesseract_texts[tesseract_texts.str.len() > 0]
 
@@ -561,7 +574,9 @@ class OCRProcessor:
             print(f"  Average confidence: {avg_confidences.mean():.1f}%")
 
             yolo_regions = results_df["methods"].apply(
-                lambda x: x.get("yolo", {}).get("num_regions", 0) if isinstance(x, dict) else 0
+                lambda x: x.get("yolo", {}).get("num_regions", 0)
+                if isinstance(x, dict)
+                else 0
             )
             if yolo_regions.sum() > 0:
                 print(f"\nYOLO Text Detection:")

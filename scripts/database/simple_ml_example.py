@@ -5,9 +5,10 @@ SIMPLE EXAMPLE:
 2. Images in Parquet files (efficient storage) → loaded on-demand during training
 3. Best of both worlds: SQL filtering + efficient image loading
 """
+from io import BytesIO
+
 import pandas as pd
 from PIL import Image
-from io import BytesIO
 from sqlalchemy import create_engine
 
 # PART 1: Setup - Load metadata only (FAST!)

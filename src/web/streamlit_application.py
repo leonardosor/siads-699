@@ -46,7 +46,10 @@ def _load_font(size: int = 18) -> ImageFont.FreeTypeFont:
 
 
 def _extract_text_from_bbox(
-    image: Image.Image, bbox: Tuple[float, float, float, float], enhanced: bool = True
+    image: Image.Image,
+    bbox: Tuple[float, float, float, float],
+    enhanced: bool = True,
+    label: str = "",
 ) -> dict:
     """
     Extract text from a specific bounding box region using Tesseract OCR
@@ -55,6 +58,7 @@ def _extract_text_from_bbox(
         image: PIL Image
         bbox: Tuple of (x1, y1, x2, y2) coordinates
         enhanced: Whether to use enhanced OCR with preprocessing (slower but more accurate)
+        label: Region label to help select appropriate PSM mode
 
     Returns:
         Dictionary with extracted text and confidence
@@ -71,10 +75,10 @@ def _extract_text_from_bbox(
                 "psm_mode": result.get("psm_mode", ""),
             }
         else:
-            # Original fast method (legacy)
+            # Original fast method (standard)
             x1, y1, x2, y2 = bbox
-            # Add small padding around the box to improve OCR accuracy
-            padding = 5
+            # Add moderate padding around the box
+            padding = 10
             x1 = max(0, int(x1) - padding)
             y1 = max(0, int(y1) - padding)
             x2 = min(image.width, int(x2) + padding)
@@ -83,8 +87,42 @@ def _extract_text_from_bbox(
             # Crop the region
             cropped = image.crop((x1, y1, x2, y2))
 
-            # Extract text using Tesseract
-            text = pytesseract.image_to_string(cropped, config="--psm 6").strip()
+            # Calculate region size
+            width = x2 - x1
+            height = y2 - y1
+            area_ratio = (width * height) / (image.width * image.height)
+
+            # Select PSM mode based on region characteristics
+            # Large regions (>30% of image) or "body"/"document" labels need different handling
+            if area_ratio > 0.3 or label.lower() in [
+                "body",
+                "document",
+                "page",
+                "form",
+                "table",
+            ]:
+                # Use PSM 3 (automatic) for large document regions
+                psm_mode = 3
+            elif label.lower() in ["header", "title", "heading", "footer"]:
+                # Headers/footers often have mixed content - use automatic
+                psm_mode = 3  # Automatic - let Tesseract figure it out
+            elif area_ratio > 0.15:  # Medium-sized regions (15-30%)
+                # Use PSM 6 for medium blocks
+                psm_mode = 6  # Uniform block
+            elif height > width * 2:
+                # Tall narrow regions: might be vertical text or column
+                psm_mode = 6  # Uniform block
+            elif width > height * 3:
+                # Wide regions: likely single line
+                psm_mode = 7  # Single line
+            else:
+                # Default: single line for form fields
+                psm_mode = 7
+
+            # Extract text using selected PSM mode
+            text = pytesseract.image_to_string(
+                cropped, config=f"--psm {psm_mode}"
+            ).strip()
 
             # Get confidence scores
             data = pytesseract.image_to_data(
@@ -99,6 +137,7 @@ def _extract_text_from_bbox(
                 "text": text,
                 "ocr_confidence": avg_confidence,
                 "word_count": len([w for w in text.split() if w]),
+                "psm_mode": psm_mode,
             }
     except Exception as e:
         return {"text": "", "ocr_confidence": 0, "word_count": 0, "error": str(e)}
@@ -144,13 +183,17 @@ def _format_detections(
         # Extract text if requested and image is provided
         if extract_text and image is not None:
             bbox = (coords[0], coords[1], coords[2], coords[3])
-            ocr_result = _extract_text_from_bbox(image, bbox, enhanced=enhanced_ocr)
+            label = row_data["label"]
+            ocr_result = _extract_text_from_bbox(
+                image, bbox, enhanced=enhanced_ocr, label=label
+            )
             row_data["extracted_text"] = ocr_result["text"]
             row_data["ocr_confidence"] = ocr_result["ocr_confidence"]
             row_data["word_count"] = ocr_result["word_count"]
+            # Always include PSM mode for debugging
+            row_data["ocr_psm_mode"] = ocr_result.get("psm_mode", "")
             if enhanced_ocr:
                 row_data["ocr_method"] = ocr_result.get("method", "")
-                row_data["ocr_psm_mode"] = ocr_result.get("psm_mode", "")
 
         rows.append(row_data)
 
@@ -252,16 +295,15 @@ def main() -> None:
             help="Use Tesseract OCR to extract text from each detected bounding box",
         )
 
-        enhanced_ocr = st.checkbox(
-            "Enhanced OCR (slower, more accurate)",
-            value=True,
-            help="Use advanced preprocessing and multi-method OCR for better accuracy. Disable for faster processing.",
-        )
+        # Always use standard mode (enhanced mode disabled as it made results worse)
+        enhanced_ocr = False
 
-        if enhanced_ocr:
-            st.info(
-                "Enhanced OCR uses image preprocessing, upscaling, and tests multiple PSM modes for best results."
-            )
+        st.info(
+            "Using optimized Tesseract OCR with smart PSM mode selection:\n"
+            "- Large regions (body, tables): PSM 3 (automatic)\n"
+            "- Headers/footers: PSM 3 (automatic)\n"
+            "- Form fields: PSM 7 (single line)"
+        )
 
         st.write("Weights file:")
         st.code(str(DEFAULT_MODEL_PATH))
@@ -321,7 +363,7 @@ def main() -> None:
 
             st.image(
                 annotated_buffer.getvalue(),
-                caption=f"UM-Branded Bounding Boxes{page_suffix}",
+                # caption=f"UM-Branded Bounding Boxes{page_suffix}",
                 use_container_width=True,
             )
 

@@ -3,6 +3,7 @@ Enhanced OCR preprocessing utilities for improving Tesseract accuracy
 Includes image preprocessing, enhancement, and multi-config testing
 """
 
+import re
 from typing import Dict, List, Tuple
 
 import cv2
@@ -24,23 +25,190 @@ class OCREnhancer:
         "sparse_text": 11,  # Sparse text with OSD (Orientation and Script Detection)
         "single_block": 6,  # Uniform block of text
         "auto": 3,  # Fully automatic page segmentation
+        "raw_line": 13,  # Raw line without OSD or OCR
     }
+
+    # Common character whitelist for financial forms
+    FINANCIAL_FORM_CHARS = (
+        "0123456789"  # Numbers
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # Uppercase letters
+        "abcdefghijklmnopqrstuvwxyz"  # Lowercase letters
+        ".,/$%-:#() "  # Common financial symbols
+    )
+
+    @staticmethod
+    def deskew_image(img_array: np.ndarray) -> np.ndarray:
+        """
+        Detect and correct skew/rotation in image
+
+        Args:
+            img_array: Input image as numpy array (grayscale)
+
+        Returns:
+            Deskewed image as numpy array
+        """
+        try:
+            # Detect edges
+            edges = cv2.Canny(img_array, 50, 150, apertureSize=3)
+
+            # Detect lines using Hough transform
+            lines = cv2.HoughLines(edges, 1, np.pi / 180, 100)
+
+            if lines is not None:
+                # Calculate average angle
+                angles = []
+                for rho, theta in lines[:, 0]:
+                    angle = (theta * 180 / np.pi) - 90
+                    angles.append(angle)
+
+                median_angle = np.median(angles)
+
+                # Only rotate if angle is significant (> 0.5 degrees)
+                if abs(median_angle) > 0.5:
+                    (h, w) = img_array.shape[:2]
+                    center = (w // 2, h // 2)
+                    M = cv2.getRotationMatrix2D(center, median_angle, 1.0)
+                    rotated = cv2.warpAffine(
+                        img_array,
+                        M,
+                        (w, h),
+                        flags=cv2.INTER_CUBIC,
+                        borderMode=cv2.BORDER_REPLICATE,
+                    )
+                    return rotated
+
+            return img_array
+        except Exception:
+            return img_array
+
+    @staticmethod
+    def remove_borders(img_array: np.ndarray, border_size: int = 5) -> np.ndarray:
+        """
+        Remove borders from image that might confuse OCR
+
+        Args:
+            img_array: Input image as numpy array
+            border_size: Size of border to remove (pixels)
+
+        Returns:
+            Image with borders removed
+        """
+        try:
+            h, w = img_array.shape[:2]
+            if h > border_size * 2 and w > border_size * 2:
+                return img_array[
+                    border_size : h - border_size, border_size : w - border_size
+                ]
+            return img_array
+        except Exception:
+            return img_array
+
+    @staticmethod
+    def apply_clahe(img_array: np.ndarray) -> np.ndarray:
+        """
+        Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+        for better local contrast
+
+        Args:
+            img_array: Input grayscale image as numpy array
+
+        Returns:
+            Image with enhanced contrast
+        """
+        try:
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            return clahe.apply(img_array)
+        except Exception:
+            return img_array
+
+    @staticmethod
+    def detect_and_invert(img_array: np.ndarray) -> np.ndarray:
+        """
+        Detect if image has white text on dark background and invert if needed
+        Tesseract works better with dark text on light background
+
+        Args:
+            img_array: Input grayscale image as numpy array
+
+        Returns:
+            Corrected image (inverted if needed)
+        """
+        try:
+            # Calculate mean brightness
+            mean_brightness = np.mean(img_array)
+
+            # If image is mostly dark (mean < 127), likely white-on-black
+            if mean_brightness < 127:
+                return cv2.bitwise_not(img_array)
+            return img_array
+        except Exception:
+            return img_array
+
+    @staticmethod
+    def bilateral_filter(img_array: np.ndarray) -> np.ndarray:
+        """
+        Apply bilateral filter for edge-preserving noise reduction
+
+        Args:
+            img_array: Input image as numpy array
+
+        Returns:
+            Filtered image
+        """
+        try:
+            return cv2.bilateralFilter(img_array, 9, 75, 75)
+        except Exception:
+            return img_array
+
+    @staticmethod
+    def aggressive_morphology(
+        img_array: np.ndarray, operation: str = "close"
+    ) -> np.ndarray:
+        """
+        Apply aggressive morphological operations to connect broken characters
+
+        Args:
+            img_array: Input binary image as numpy array
+            operation: 'close', 'dilate', or 'open'
+
+        Returns:
+            Morphologically processed image
+        """
+        try:
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+
+            if operation == "close":
+                return cv2.morphologyEx(img_array, cv2.MORPH_CLOSE, kernel)
+            elif operation == "dilate":
+                return cv2.dilate(img_array, kernel, iterations=1)
+            elif operation == "open":
+                return cv2.morphologyEx(img_array, cv2.MORPH_OPEN, kernel)
+
+            return img_array
+        except Exception:
+            return img_array
 
     @staticmethod
     def preprocess_image(
         image: Image.Image,
         method: str = "adaptive",
-        scale_factor: float = 2.0,
+        scale_factor: float = 3.0,
         denoise: bool = True,
+        deskew: bool = True,
+        remove_border: bool = True,
+        use_clahe: bool = True,
     ) -> Image.Image:
         """
-        Preprocess image for better OCR results
+        Preprocess image for better OCR results with advanced techniques
 
         Args:
             image: PIL Image to preprocess
-            method: Preprocessing method ('adaptive', 'otsu', 'gaussian', 'sharpen')
-            scale_factor: Factor to upscale image (larger = better for small text)
+            method: Preprocessing method ('adaptive', 'otsu', 'gaussian', 'sharpen', 'bilateral', 'clahe')
+            scale_factor: Factor to upscale image (3.0 recommended for small text)
             denoise: Whether to apply denoising
+            deskew: Whether to correct image rotation
+            remove_border: Whether to remove borders
+            use_clahe: Whether to use CLAHE for contrast enhancement
 
         Returns:
             Preprocessed PIL Image
@@ -54,7 +222,18 @@ class OCREnhancer:
         else:
             gray = img_array
 
-        # Upscale for better recognition of small text
+        # Remove borders that might confuse OCR
+        if remove_border:
+            gray = OCREnhancer.remove_borders(gray, border_size=3)
+
+        # Detect and invert if white text on dark background
+        gray = OCREnhancer.detect_and_invert(gray)
+
+        # Apply CLAHE for better local contrast (before upscaling)
+        if use_clahe:
+            gray = OCREnhancer.apply_clahe(gray)
+
+        # Upscale for better recognition of small text (increased to 3x)
         if scale_factor > 1.0:
             new_width = int(gray.shape[1] * scale_factor)
             new_height = int(gray.shape[0] * scale_factor)
@@ -62,9 +241,9 @@ class OCREnhancer:
                 gray, (new_width, new_height), interpolation=cv2.INTER_CUBIC
             )
 
-        # Apply denoising if requested
-        if denoise:
-            gray = cv2.fastNlMeansDenoising(gray, h=10)
+        # Deskew if requested
+        if deskew:
+            gray = OCREnhancer.deskew_image(gray)
 
         # Apply different preprocessing methods
         if method == "adaptive":
@@ -83,6 +262,18 @@ class OCREnhancer:
             _, processed = cv2.threshold(
                 blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
             )
+        elif method == "bilateral":
+            # Bilateral filter for edge-preserving smoothing
+            filtered = OCREnhancer.bilateral_filter(gray)
+            _, processed = cv2.threshold(
+                filtered, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+            )
+        elif method == "clahe":
+            # Extra CLAHE pass
+            enhanced = OCREnhancer.apply_clahe(gray)
+            _, processed = cv2.threshold(
+                enhanced, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+            )
         elif method == "sharpen":
             # Sharpening kernel
             kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
@@ -90,10 +281,13 @@ class OCREnhancer:
         else:
             processed = gray
 
-        # Apply morphological operations to clean up
-        kernel = np.ones((1, 1), np.uint8)
+        # Apply denoising after thresholding if requested
+        if denoise and method in ["adaptive", "otsu", "gaussian", "bilateral", "clahe"]:
+            processed = cv2.fastNlMeansDenoising(processed, h=10)
+
+        # Apply morphological operations to connect broken characters and clean up
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 1))
         processed = cv2.morphologyEx(processed, cv2.MORPH_CLOSE, kernel)
-        processed = cv2.morphologyEx(processed, cv2.MORPH_OPEN, kernel)
 
         # Convert back to PIL Image
         return Image.fromarray(processed)
@@ -129,11 +323,55 @@ class OCREnhancer:
         return enhancer.enhance(factor)
 
     @staticmethod
+    def post_process_text(text: str, apply_corrections: bool = False) -> str:
+        """
+        Post-process OCR text to fix common errors
+
+        Args:
+            text: Raw OCR text
+            apply_corrections: Whether to apply character corrections (disabled by default)
+
+        Returns:
+            Cleaned text
+        """
+        if not text:
+            return text
+
+        result = text
+
+        # Only apply corrections if explicitly enabled
+        if apply_corrections:
+            # Fix common OCR mistakes
+            corrections = {
+                "l": "1",  # lowercase L often confused with 1
+                "O": "0",  # uppercase O often confused with 0
+                "|": "I",  # pipe often confused with I
+                "`": "'",  # backtick to apostrophe
+                """: '"',  # Smart quotes to regular quotes
+                """: '"',
+                "'": "'",
+                "'": "'",
+            }
+
+            # Apply corrections only in numeric contexts
+            # If the text looks like it should be numeric (has mostly digits)
+            digit_count = sum(c.isdigit() for c in text)
+            if digit_count > len(text) * 0.3:  # More than 30% digits
+                for old, new in corrections.items():
+                    result = result.replace(old, new)
+
+        # Remove extra whitespace (always apply this)
+        result = " ".join(result.split())
+
+        return result
+
+    @staticmethod
     def extract_text_with_config(
         image: Image.Image,
         psm_mode: str = "single_line",
         oem: int = 3,
         custom_config: str = "",
+        use_whitelist: bool = False,
     ) -> Dict[str, any]:
         """
         Extract text using specified Tesseract configuration
@@ -143,6 +381,7 @@ class OCREnhancer:
             psm_mode: Page segmentation mode name (see PSM_MODES)
             oem: OCR Engine Mode (0=Legacy, 1=Neural nets LSTM, 2=Legacy+LSTM, 3=Default)
             custom_config: Additional Tesseract config string
+            use_whitelist: Whether to constrain to common financial form characters
 
         Returns:
             Dictionary with text, confidence, and config used
@@ -154,17 +393,35 @@ class OCREnhancer:
         if custom_config:
             config += f" {custom_config}"
 
+        # Add character whitelist for financial forms if requested
+        if use_whitelist:
+            # Escape special characters for tesseract
+            whitelist = OCREnhancer.FINANCIAL_FORM_CHARS.replace("\\", "\\\\")
+            config += f" -c tessedit_char_whitelist='{whitelist}'"
+
         try:
             # Extract text
             text = pytesseract.image_to_string(image, config=config).strip()
 
-            # Get confidence scores
+            # Post-process to clean whitespace only (no character corrections)
+            text = OCREnhancer.post_process_text(text, apply_corrections=False)
+
+            # Get confidence scores with detailed word-level data
             data = pytesseract.image_to_data(
                 image, config=config, output_type=pytesseract.Output.DICT
             )
-            confidences = [
-                int(conf) for conf in data["conf"] if conf != "-1" and int(conf) > 0
-            ]
+
+            # Calculate confidence filtering out low-confidence words
+            confidences = []
+            high_conf_words = []
+            for i, conf in enumerate(data["conf"]):
+                if conf != "-1" and int(conf) > 0:
+                    conf_val = int(conf)
+                    confidences.append(conf_val)
+                    # Only include words with confidence > 60
+                    if conf_val > 60 and data["text"][i].strip():
+                        high_conf_words.append(data["text"][i])
+
             avg_confidence = sum(confidences) / len(confidences) if confidences else 0
 
             return {
@@ -173,6 +430,7 @@ class OCREnhancer:
                 "config": config,
                 "psm_mode": psm_mode,
                 "word_count": len([w for w in text.split() if w]),
+                "high_conf_word_count": len(high_conf_words),
             }
         except Exception as e:
             return {
@@ -181,6 +439,7 @@ class OCREnhancer:
                 "config": config,
                 "psm_mode": psm_mode,
                 "word_count": 0,
+                "high_conf_word_count": 0,
                 "error": str(e),
             }
 
@@ -190,26 +449,42 @@ class OCREnhancer:
         image: Image.Image,
         preprocessing_methods: List[str] = None,
         psm_modes: List[str] = None,
+        oem_modes: List[int] = None,
         padding: int = 10,
+        try_whitelist: bool = False,
+        conservative: bool = True,
     ) -> Dict[str, any]:
         """
-        Try multiple preprocessing methods and PSM modes, return best result
+        Try multiple preprocessing methods, PSM modes, and OEM modes, return best result
 
         Args:
             image: PIL Image to extract text from
             preprocessing_methods: List of preprocessing methods to try
             psm_modes: List of PSM modes to try
+            oem_modes: List of OCR Engine Modes to try
             padding: Padding to add around image
+            try_whitelist: Whether to try with character whitelist
+            conservative: If True, use gentler preprocessing (recommended)
 
         Returns:
             Dictionary with best OCR result
         """
         if preprocessing_methods is None:
-            preprocessing_methods = ["adaptive", "otsu", "gaussian"]
+            # Use only proven methods - fewer but better
+            preprocessing_methods = ["adaptive", "otsu"]
         if psm_modes is None:
-            psm_modes = ["single_line", "single_word", "sparse_text"]
+            # Auto-detect based on image size
+            # Large images likely contain multiple lines/blocks
+            if image.width * image.height > 100000:  # Large region
+                psm_modes = ["auto", "single_block", "single_line"]
+            else:
+                # Small regions: likely form fields
+                psm_modes = ["single_line", "single_word"]
+        if oem_modes is None:
+            # Just use default OEM (best overall)
+            oem_modes = [3]
 
-        # Add padding
+        # Add generous padding
         padded = Image.new(
             "RGB",
             (image.width + 2 * padding, image.height + 2 * padding),
@@ -217,36 +492,104 @@ class OCREnhancer:
         )
         padded.paste(image, (padding, padding))
 
-        best_result = {"text": "", "confidence": 0, "method": None, "psm_mode": None}
+        best_result = {
+            "text": "",
+            "confidence": 0,
+            "method": None,
+            "psm_mode": None,
+            "oem": None,
+        }
 
-        # Try different combinations
+        # Also try with NO preprocessing first as baseline
+        for psm_mode in psm_modes:
+            for oem in oem_modes:
+                result = cls.extract_text_with_config(
+                    padded, psm_mode=psm_mode, oem=oem, use_whitelist=False
+                )
+
+                if result["confidence"] > best_result["confidence"] or (
+                    result["confidence"] >= best_result["confidence"] - 5
+                    and len(result["text"]) > len(best_result["text"])
+                ):
+                    best_result = {
+                        "text": result["text"],
+                        "confidence": result["confidence"],
+                        "word_count": result["word_count"],
+                        "high_conf_word_count": result.get("high_conf_word_count", 0),
+                        "method": "none",
+                        "psm_mode": psm_mode,
+                        "oem": oem,
+                        "config": result["config"],
+                    }
+
+        # Try different combinations with preprocessing
         for method in preprocessing_methods:
             try:
-                # Preprocess image
-                processed = cls.preprocess_image(padded, method=method)
+                # Preprocess image - use CONSERVATIVE settings
+                if conservative:
+                    processed = cls.preprocess_image(
+                        padded,
+                        method=method,
+                        scale_factor=2.0,  # Moderate scaling (was 3.0)
+                        denoise=False,  # Skip denoising - can remove details
+                        deskew=False,  # Skip deskewing - can distort
+                        remove_border=False,  # Keep borders
+                        use_clahe=False,  # Skip CLAHE initially
+                    )
+                else:
+                    # Aggressive mode
+                    processed = cls.preprocess_image(
+                        padded,
+                        method=method,
+                        scale_factor=3.0,
+                        denoise=True,
+                        deskew=True,
+                        remove_border=True,
+                        use_clahe=True,
+                    )
 
-                # Enhance contrast and sharpness
-                processed = cls.enhance_contrast(processed, factor=1.5)
-                processed = cls.enhance_sharpness(processed, factor=1.5)
+                # Light enhancement only
+                processed = cls.enhance_contrast(
+                    processed, factor=1.3
+                )  # Reduced from 2.0
+                processed = cls.enhance_sharpness(
+                    processed, factor=1.3
+                )  # Reduced from 2.0
 
                 # Try different PSM modes
                 for psm_mode in psm_modes:
-                    result = cls.extract_text_with_config(processed, psm_mode=psm_mode)
+                    # Try different OEM modes
+                    for oem in oem_modes:
+                        # Try without whitelist first
+                        result = cls.extract_text_with_config(
+                            processed, psm_mode=psm_mode, oem=oem, use_whitelist=False
+                        )
 
-                    # Update best result if this one is better
-                    if result["confidence"] > best_result["confidence"] or (
-                        result["confidence"] >= best_result["confidence"]
-                        and len(result["text"]) > len(best_result["text"])
-                    ):
-                        best_result = {
-                            "text": result["text"],
-                            "confidence": result["confidence"],
-                            "word_count": result["word_count"],
-                            "method": method,
-                            "psm_mode": psm_mode,
-                            "config": result["config"],
-                        }
-            except Exception as e:
+                        # Update best result if this one is better
+                        # Prioritize: 1) higher confidence, 2) more text
+                        is_better = False
+                        if result["confidence"] > best_result["confidence"] + 5:
+                            is_better = True
+                        elif abs(
+                            result["confidence"] - best_result["confidence"]
+                        ) <= 5 and len(result["text"]) > len(best_result["text"]):
+                            is_better = True
+
+                        if is_better:
+                            best_result = {
+                                "text": result["text"],
+                                "confidence": result["confidence"],
+                                "word_count": result["word_count"],
+                                "high_conf_word_count": result.get(
+                                    "high_conf_word_count", 0
+                                ),
+                                "method": method,
+                                "psm_mode": psm_mode,
+                                "oem": oem,
+                                "config": result["config"],
+                            }
+
+            except Exception:
                 continue
 
         return best_result
@@ -324,12 +667,15 @@ def extract_text_from_bbox(
     """
     enhancer = OCREnhancer()
     return enhancer.extract_text_enhanced(
-        image, bbox=bbox, use_multi_method=enhanced, padding=15
+        image, bbox=bbox, use_multi_method=enhanced, padding=15  # Moderate padding
     )
 
 
 def preprocess_for_ocr(
-    image: Image.Image, method: str = "adaptive", scale: float = 2.0
+    image: Image.Image,
+    method: str = "adaptive",
+    scale: float = 3.0,
+    advanced: bool = True,
 ) -> Image.Image:
     """
     Convenience function to preprocess image for OCR
@@ -337,9 +683,29 @@ def preprocess_for_ocr(
     Args:
         image: PIL Image
         method: Preprocessing method
-        scale: Scale factor for upsampling
+        scale: Scale factor for upsampling (3.0 recommended)
+        advanced: Whether to use advanced preprocessing (deskew, CLAHE, etc.)
 
     Returns:
         Preprocessed PIL Image
     """
-    return OCREnhancer.preprocess_image(image, method=method, scale_factor=scale)
+    if advanced:
+        return OCREnhancer.preprocess_image(
+            image,
+            method=method,
+            scale_factor=scale,
+            denoise=True,
+            deskew=True,
+            remove_border=True,
+            use_clahe=True,
+        )
+    else:
+        return OCREnhancer.preprocess_image(
+            image,
+            method=method,
+            scale_factor=scale,
+            denoise=False,
+            deskew=False,
+            remove_border=False,
+            use_clahe=False,
+        )

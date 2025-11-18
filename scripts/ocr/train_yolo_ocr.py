@@ -3,21 +3,24 @@ Train custom YOLO models on document images from parquet files
 This script prepares data and trains Ultralytics YOLO models for document classification/detection
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from PIL import Image
 import io
-from ultralytics import YOLO
-from tqdm import tqdm
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 import yaml
+from PIL import Image
+from tqdm import tqdm
+from ultralytics import YOLO
 
 
 class YOLODocumentTrainer:
     """Train YOLO models on document images from parquet files"""
 
     def __init__(
-        self, parquet_dir="/workspace/data/raw", output_dir="/workspace/data/output/yolo_training"
+        self,
+        parquet_dir="/workspace/data/raw",
+        output_dir="/workspace/data/output/yolo_training",
     ):
         """
         Initialize YOLO trainer
@@ -212,7 +215,9 @@ class YOLODocumentTrainer:
 
         return results
 
-    def train_detection_model(self, model_size="n", epochs=50, imgsz=640, batch=16, device="0"):
+    def train_detection_model(
+        self, model_size="n", epochs=50, imgsz=640, batch=16, device="0"
+    ):
         """
         Train YOLO detection model (for text region detection)
         Note: This requires annotated bounding boxes
@@ -290,7 +295,8 @@ def main():
 
     # Initialize trainer
     trainer = YOLODocumentTrainer(
-        parquet_dir="/workspace/data/raw", output_dir="/workspace/data/output/yolo_training"
+        parquet_dir="/workspace/data/raw",
+        output_dir="/workspace/data/output/yolo_training",
     )
 
     # Step 1: Extract images and prepare dataset

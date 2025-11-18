@@ -1,8 +1,9 @@
-import pytest
 import tempfile
 from pathlib import Path
-from PIL import Image
+
 import numpy as np
+import pytest
+from PIL import Image
 
 
 @pytest.fixture

@@ -2,12 +2,13 @@
 Load parquet file metadata into PostgreSQL database
 """
 
-import pandas as pd
 import os
+import time
 from pathlib import Path
+
+import pandas as pd
 from sqlalchemy import create_engine, text
 from tqdm import tqdm
-import time
 
 # Database connection
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:123@db:5432/postgres")
@@ -36,7 +37,9 @@ def load_metadata_from_parquet(parquet_dir="/workspace/data/raw"):
     print("Verifying lmcheck table exists...")
     with engine.connect() as conn:
         result = conn.execute(
-            text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'lmcheck')")
+            text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'lmcheck')"
+            )
         )
         exists = result.scalar()
         if not exists:
@@ -66,7 +69,9 @@ def load_metadata_from_parquet(parquet_dir="/workspace/data/raw"):
         # Extract metadata (without loading full images)
         metadata_records = []
 
-        for row in tqdm(df.itertuples(index=True), total=len(df), desc="  Extracting metadata"):
+        for row in tqdm(
+            df.itertuples(index=True), total=len(df), desc="  Extracting metadata"
+        ):
             metadata_records.append(
                 {
                     "parquet_file": pf.name,
@@ -84,7 +89,8 @@ def load_metadata_from_parquet(parquet_dir="/workspace/data/raw"):
             # Delete existing records for this parquet file first
             with engine.connect() as conn:
                 conn.execute(
-                    text("DELETE FROM lmcheck WHERE parquet_file = :pf"), {"pf": pf.name}
+                    text("DELETE FROM lmcheck WHERE parquet_file = :pf"),
+                    {"pf": pf.name},
                 )
                 conn.commit()
 

@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       tesseract-ocr libtesseract-dev poppler-utils \
-      libglib2.0-0 libgl1 ca-certificates curl && \
+      libglib2.0-0 libgl1 ca-certificates curl postgresql-client && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

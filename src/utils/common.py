@@ -34,7 +34,11 @@ def find_repo_root() -> Path:
 
     # Original logic for non-Docker environments
     for parent in current_path.parents:
-        if (parent / "src").is_dir() and (parent / "data").is_dir() and (parent / "models").is_dir():
+        if (
+            (parent / "src").is_dir()
+            and (parent / "data").is_dir()
+            and (parent / "models").is_dir()
+        ):
             return parent
 
     raise RuntimeError(
@@ -45,14 +49,23 @@ def find_repo_root() -> Path:
 class BoundingBox:
     """YOLO format bounding box (class, x_center, y_center, width, height) - normalized [0, 1]"""
 
-    def __init__(self, class_id: int, x_center: float, y_center: float, width: float, height: float):
+    def __init__(
+        self,
+        class_id: int,
+        x_center: float,
+        y_center: float,
+        width: float,
+        height: float,
+    ):
         self.class_id = class_id
         self.x_center = x_center
         self.y_center = y_center
         self.width = width
         self.height = height
 
-    def to_corners(self, img_width: int, img_height: int) -> Tuple[float, float, float, float]:
+    def to_corners(
+        self, img_width: int, img_height: int
+    ) -> Tuple[float, float, float, float]:
         """Convert YOLO format to corner coordinates (x_min, y_min, x_max, y_max) in pixels"""
         x_center_px = self.x_center * img_width
         y_center_px = self.y_center * img_height
@@ -134,7 +147,10 @@ def save_yolo_labels(boxes: List[BoundingBox], output_path: Path) -> None:
 
 # Augmentation functions
 
-def horizontal_flip(img: np.ndarray, boxes: List[BoundingBox]) -> Tuple[np.ndarray, List[BoundingBox]]:
+
+def horizontal_flip(
+    img: np.ndarray, boxes: List[BoundingBox]
+) -> Tuple[np.ndarray, List[BoundingBox]]:
     """Flip image and boxes horizontally"""
     flipped_img = cv2.flip(img, 1)
     flipped_boxes = []
@@ -142,18 +158,16 @@ def horizontal_flip(img: np.ndarray, boxes: List[BoundingBox]) -> Tuple[np.ndarr
     for box in boxes:
         # Flip x_center: new_x = 1 - old_x
         new_box = BoundingBox(
-            box.class_id,
-            1.0 - box.x_center,
-            box.y_center,
-            box.width,
-            box.height
+            box.class_id, 1.0 - box.x_center, box.y_center, box.width, box.height
         )
         flipped_boxes.append(new_box)
 
     return flipped_img, flipped_boxes
 
 
-def adjust_brightness_contrast(img: np.ndarray, alpha: float = 1.0, beta: int = 0) -> np.ndarray:
+def adjust_brightness_contrast(
+    img: np.ndarray, alpha: float = 1.0, beta: int = 0
+) -> np.ndarray:
     """
     Adjust image brightness and contrast
     alpha: contrast (1.0 = no change, <1.0 = decrease, >1.0 = increase)
@@ -170,7 +184,9 @@ def add_gaussian_noise(img: np.ndarray, mean: float = 0, std: float = 10) -> np.
     return noisy_img
 
 
-def adjust_hsv(img: np.ndarray, h_shift: int = 0, s_scale: float = 1.0, v_scale: float = 1.0) -> np.ndarray:
+def adjust_hsv(
+    img: np.ndarray, h_shift: int = 0, s_scale: float = 1.0, v_scale: float = 1.0
+) -> np.ndarray:
     """Adjust hue, saturation, and value"""
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV).astype(np.float32)
 
@@ -196,10 +212,10 @@ def adjust_background_color(img: np.ndarray, target_color: str = "white") -> np.
     # Define color shifts for different paper types
     # (brightness_factor, saturation_factor, additional_brightness)
     color_shifts = {
-        "white": (1.25, 0.3, 40),      # Brighten significantly, remove yellow tint
-        "cream": (1.15, 0.6, 20),      # Moderately brighten, reduce saturation
-        "yellow": (1.0, 1.0, 0),       # Keep as-is (original yellow tone)
-        "gray": (0.90, 0.5, 0),        # Slightly darken and desaturate
+        "white": (1.25, 0.3, 40),  # Brighten significantly, remove yellow tint
+        "cream": (1.15, 0.6, 20),  # Moderately brighten, reduce saturation
+        "yellow": (1.0, 1.0, 0),  # Keep as-is (original yellow tone)
+        "gray": (0.90, 0.5, 0),  # Slightly darken and desaturate
         "normalize": (1.10, 0.6, 15),  # Normalize by reducing saturation
     }
 
@@ -220,7 +236,9 @@ def adjust_background_color(img: np.ndarray, target_color: str = "white") -> np.
     return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
 
-def rotate_image_90(img: np.ndarray, boxes: List[BoundingBox], k: int = 1) -> Tuple[np.ndarray, List[BoundingBox]]:
+def rotate_image_90(
+    img: np.ndarray, boxes: List[BoundingBox], k: int = 1
+) -> Tuple[np.ndarray, List[BoundingBox]]:
     """
     Rotate image by 90 degrees k times clockwise
     k=1: 90° CW, k=2: 180°, k=3: 270° CW (90° CCW)
@@ -292,7 +310,7 @@ def random_crop_with_boxes(
     x_start = random.randint(int(max_x_start), int(min_x_end - new_w))
     y_start = random.randint(int(max_y_start), int(min_y_end - new_h))
 
-    cropped_img = img[y_start:y_start + new_h, x_start:x_start + new_w]
+    cropped_img = img[y_start : y_start + new_h, x_start : x_start + new_w]
 
     # Adjust bounding boxes
     cropped_boxes = []

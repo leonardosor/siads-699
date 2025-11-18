@@ -122,7 +122,12 @@ def main():
     print("PART 1: DATASET COMPOSITION")
     print("=" * 80)
 
-    for split_name in ["training", "validation"]:
+    for split_name in [
+        "ground-truth",
+        "ground-truth-augmented",
+        "training",
+        "validation",
+    ]:
         split_dir = DATA_DIR / split_name
 
         if not split_dir.exists():
@@ -150,9 +155,9 @@ def main():
 
         # Check if we have 100 originals
         if len(original_imgs) >= 100:
-            print(f"  ✓ Meets 100 original images requirement")
+            print(f"  [PASS] Meets 100 original images requirement")
         elif len(original_imgs) > 0:
-            print(f"  ⚠️  Only {len(original_imgs)} original images (target: 100)")
+            print(f"  [WARN] Only {len(original_imgs)} original images (target: 100)")
 
         # Check augmentation ratio
         if len(original_imgs) > 0:
@@ -190,27 +195,28 @@ def main():
         )
         print(f"  - {expected_acc*100:.0f}% accuracy: {n} samples")
 
-    # Check current validation set
-    val_dir = DATA_DIR / "validation"
+    # Check ground-truth set (used as validation)
+    val_dir = DATA_DIR / "ground-truth"
     if val_dir.exists():
         original_imgs, _, _ = identify_original_images(val_dir)
         actual_n = len(original_imgs)
 
-        print(f"\nYour validation set: {actual_n} original images")
+        print(f"\nYour ground-truth set: {actual_n} original images")
 
         if actual_n >= required_n:
             print(
-                f"✓ SUFFICIENT for {desired_confidence*100:.0f}% CI ± {desired_margin*100:.0f}%"
+                f"[PASS] SUFFICIENT for {desired_confidence*100:.0f}% CI +/- {desired_margin*100:.0f}%"
             )
         else:
-            print(f"⚠️  INSUFFICIENT - need {required_n - actual_n} more images")
+            print(f"[WARN] INSUFFICIENT - need {required_n - actual_n} more images")
 
             # What margin can we achieve?
-            z_score = stats.norm.ppf((1 + desired_confidence) / 2)
-            achievable_margin = z_score * math.sqrt(0.25 / actual_n)
-            print(
-                f"   With {actual_n} images, you can achieve ±{achievable_margin*100:.1f}% margin"
-            )
+            if actual_n > 0:
+                z_score = stats.norm.ppf((1 + desired_confidence) / 2)
+                achievable_margin = z_score * math.sqrt(0.25 / actual_n)
+                print(
+                    f"   With {actual_n} images, you can achieve +/-{achievable_margin*100:.1f}% margin"
+                )
 
     # ========================================================================
     # PART 3: Model Performance Confidence Intervals
@@ -257,13 +263,13 @@ def main():
             print(
                 f"  {desired_confidence*100:.0f}% CI:         [{lower:.4f}, {upper:.4f}]"
             )
-            print(f"  Margin of error: ±{margin:.4f} (±{margin*100:.2f}%)")
+            print(f"  Margin of error: +/-{margin:.4f} (+/-{margin*100:.2f}%)")
 
             if margin <= desired_margin:
-                print(f"  ✓ Meets ±{desired_margin*100:.0f}% target")
+                print(f"  [PASS] Meets +/-{desired_margin*100:.0f}% target")
             else:
                 print(
-                    f"  ⚠️  Exceeds ±{desired_margin*100:.0f}% target (need more validation samples)"
+                    f"  [WARN] Exceeds +/-{desired_margin*100:.0f}% target (need more validation samples)"
                 )
 
     # ========================================================================
@@ -275,16 +281,16 @@ def main():
 
     print(
         f"""
-For {desired_confidence*100:.0f}% confidence interval with ±{desired_margin*100:.0f}% margin of error:
+For {desired_confidence*100:.0f}% confidence interval with +/-{desired_margin*100:.0f}% margin of error:
 
 1. SAMPLE SIZE:
    - Minimum required: {required_n} original images for validation
-   - Your current validation set should have at least this many
+   - Your current ground-truth set should have at least this many
 
 2. DATASET COMPOSITION:
-   - ✓ Use 100+ original images
-   - ✓ Apply consistent augmentations (5-10x per image)
-   - ✓ Keep original images separate for unbiased validation
+   - [OK] Use 100+ original images
+   - [OK] Apply consistent augmentations (5-10x per image)
+   - [OK] Keep original images separate for unbiased validation
 
 3. VALIDATION STRATEGY:
    - Validate ONLY on original images (not augmented)
@@ -293,7 +299,7 @@ For {desired_confidence*100:.0f}% confidence interval with ±{desired_margin*100
 
 4. STATISTICAL REPORTING:
    - Your model accuracy: {metrics['mAP50']*100:.2f}%
-   - Report as: {metrics['mAP50']*100:.2f}% ± [margin]% (85% CI)
+   - Report as: {metrics['mAP50']*100:.2f}% +/- [margin]% (85% CI)
    - Based on n={n_val} independent validation images
 
 5. CURRENT STATUS:
@@ -301,11 +307,11 @@ For {desired_confidence*100:.0f}% confidence interval with ±{desired_margin*100
     )
 
     if val_dir.exists() and len(original_imgs) >= required_n:
-        print("   ✅ Your dataset meets statistical requirements!")
-        print("   ✅ You can confidently report 85% CI ± 5%")
+        print("   [PASS] Your dataset meets statistical requirements!")
+        print("   [PASS] You can confidently report 85% CI +/- 5%")
     else:
-        print("   ⚠️  Consider increasing validation set size")
-        print(f"   ⚠️  Target: {required_n} original validation images")
+        print("   [WARN] Consider increasing validation set size")
+        print(f"   [WARN] Target: {required_n} original validation images")
 
     print("\n" + "=" * 80)
     print()
