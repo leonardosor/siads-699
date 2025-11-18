@@ -48,6 +48,8 @@ jupyter_notebook_config.py
 *.pt
 *.pth
 *.model
+!models/trained/best.pt
+!models/production/best.pt
 checkpoints/
 /runs/
 wandb/
@@ -153,6 +155,6 @@ transfer_model.tar.gz
 notebooks/yolo_experiments_analysis.ipynb
 
 # Text files (but keep requirements and packages)
+*.txt
 !requirements*.txt
 !packages.txt
-*.txt
