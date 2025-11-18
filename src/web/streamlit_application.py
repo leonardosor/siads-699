@@ -267,13 +267,13 @@ def _bytes_to_image(data: bytes, filename: str = "") -> List[Image.Image]:
 
 def main() -> None:
     st.set_page_config(
-        page_title="Master of Applied Data Science - Capstone Project \nFinancial Form Text Extractor",
+        page_title="Financial Form Text Extractor",
         layout="wide",
     )
-    st.title("Financial Form Text Extractor")
-    st.caption(
-        "Upload a JPG/PNG/PDF to generate bounding boxes from your YOLOv8 model."
+    st.title(
+        "University of Michigan \n Master of Applied Data Science - Capstone Project \nFinancial Form Text Extractor"
     )
+    st.caption("Upload a JPG/PNG/PDF to generate bounding boxes.")
 
     if not DEFAULT_MODEL_PATH.exists():
         st.error(
