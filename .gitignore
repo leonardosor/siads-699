@@ -158,3 +158,5 @@ notebooks/yolo_experiments_analysis.ipynb
 *.txt
 !requirements*.txt
 !packages.txt
+
+*REPORT*

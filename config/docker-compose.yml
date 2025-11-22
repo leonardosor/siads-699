@@ -6,6 +6,8 @@ services:
     container_name: 699-devcontainer
     working_dir: /workspace
     shm_size: '8gb'
+    ports:
+      - "8502:8501"
     volumes:
       - ..:/workspace:cached
       - devcontainer-bashhistory:/commandhistory
@@ -17,6 +19,7 @@ services:
       - TESSDATA_PREFIX=${TESSDATA_PREFIX}
       - DATABASE_URL=postgresql://${DEV_POSTGRES_USER:-devuser}:${DEV_POSTGRES_PASSWORD:-devpassword}@db:5432/${DEV_POSTGRES_DB:-devdb}
       - HISTFILE=${HISTFILE}
+      - MODEL_PATH=/workspace/models/trained/best.pt
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     deploy:

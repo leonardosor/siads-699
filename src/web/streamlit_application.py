@@ -14,7 +14,6 @@ from pdf2image import convert_from_bytes
 from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
 
-# Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from utils.common import UM_BLUE, UM_MAIZE
 from utils.ocr_enhancement import extract_text_from_bbox as enhanced_extract_text
@@ -30,13 +29,11 @@ ALLOWED_TYPES = ("jpg", "jpeg", "png", "pdf")
 
 @st.cache_resource(show_spinner=False)
 def load_model(weights_path: Path) -> YOLO:
-    """Load YOLO weights once per Streamlit session."""
     return YOLO(str(weights_path))
 
 
 @st.cache_data(show_spinner=False)
 def _load_font(size: int = 18) -> ImageFont.FreeTypeFont:
-    """Use a clean sans font when available; fall back to default."""
     for font_name in ("Inter-Regular.ttf", "Arial.ttf", "DejaVuSans.ttf"):
         try:
             return ImageFont.truetype(font_name, size=size)
@@ -51,21 +48,8 @@ def _extract_text_from_bbox(
     enhanced: bool = True,
     label: str = "",
 ) -> dict:
-    """
-    Extract text from a specific bounding box region using Tesseract OCR
-
-    Args:
-        image: PIL Image
-        bbox: Tuple of (x1, y1, x2, y2) coordinates
-        enhanced: Whether to use enhanced OCR with preprocessing (slower but more accurate)
-        label: Region label to help select appropriate PSM mode
-
-    Returns:
-        Dictionary with extracted text and confidence
-    """
     try:
         if enhanced:
-            # Use enhanced OCR with preprocessing and multi-method approach
             result = enhanced_extract_text(image, bbox, enhanced=True)
             return {
                 "text": result.get("text", ""),
@@ -75,25 +59,19 @@ def _extract_text_from_bbox(
                 "psm_mode": result.get("psm_mode", ""),
             }
         else:
-            # Original fast method (standard)
             x1, y1, x2, y2 = bbox
-            # Add moderate padding around the box
             padding = 10
             x1 = max(0, int(x1) - padding)
             y1 = max(0, int(y1) - padding)
             x2 = min(image.width, int(x2) + padding)
             y2 = min(image.height, int(y2) + padding)
 
-            # Crop the region
             cropped = image.crop((x1, y1, x2, y2))
 
-            # Calculate region size
             width = x2 - x1
             height = y2 - y1
             area_ratio = (width * height) / (image.width * image.height)
 
-            # Select PSM mode based on region characteristics
-            # Large regions (>30% of image) or "body"/"document" labels need different handling
             if area_ratio > 0.3 or label.lower() in [
                 "body",
                 "document",
@@ -101,30 +79,22 @@ def _extract_text_from_bbox(
                 "form",
                 "table",
             ]:
-                # Use PSM 3 (automatic) for large document regions
                 psm_mode = 3
             elif label.lower() in ["header", "title", "heading", "footer"]:
-                # Headers/footers often have mixed content - use automatic
-                psm_mode = 3  # Automatic - let Tesseract figure it out
-            elif area_ratio > 0.15:  # Medium-sized regions (15-30%)
-                # Use PSM 6 for medium blocks
-                psm_mode = 6  # Uniform block
+                psm_mode = 3
+            elif area_ratio > 0.15:
+                psm_mode = 6
             elif height > width * 2:
-                # Tall narrow regions: might be vertical text or column
-                psm_mode = 6  # Uniform block
+                psm_mode = 6
             elif width > height * 3:
-                # Wide regions: likely single line
-                psm_mode = 7  # Single line
+                psm_mode = 7
             else:
-                # Default: single line for form fields
                 psm_mode = 7
 
-            # Extract text using selected PSM mode
             text = pytesseract.image_to_string(
                 cropped, config=f"--psm {psm_mode}"
             ).strip()
 
-            # Get confidence scores
             data = pytesseract.image_to_data(
                 cropped, output_type=pytesseract.Output.DICT
             )
@@ -250,18 +220,14 @@ def _run_inference(
 
 
 def _bytes_to_image(data: bytes, filename: str = "") -> List[Image.Image]:
-    """Convert uploaded file bytes to PIL Images. Returns list to handle multi-page PDFs."""
     if filename.lower().endswith(".pdf"):
-        # Convert PDF to images (one image per page)
-        # Specify poppler_path if it's not in PATH (adjust path as needed)
-        poppler_path = os.getenv("POPPLER_PATH")  # Set via environment variable
+        poppler_path = os.getenv("POPPLER_PATH")
         if poppler_path:
             images = convert_from_bytes(data, dpi=200, poppler_path=poppler_path)
         else:
             images = convert_from_bytes(data, dpi=200)
         return [img.convert("RGB") for img in images]
     else:
-        # Single image file
         return [Image.open(io.BytesIO(data)).convert("RGB")]
 
 
@@ -300,7 +266,6 @@ def main() -> None:
             help="Use Tesseract OCR to extract text from each detected bounding box",
         )
 
-        # Always use standard mode (enhanced mode disabled as it made results worse)
         enhanced_ocr = False
 
         st.info(

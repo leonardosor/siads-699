@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=30G
-#SBATCH --time=04:00:00  # Increase to 08:00:00 for Optuna optimization
+#SBATCH --time=04:00:00
 #SBATCH --mail-user=lcedeno@umich.edu
 #SBATCH --mail-type=END,FAIL
 #SBATCH --output=/home/%u/%x-%j.log
@@ -32,11 +32,9 @@ if [[ -n "${CUDA_MODULE:-}" ]]; then
   echo "Loading CUDA module ${CUDA_MODULE}"
   module load "${CUDA_MODULE}" || echo "Warning: failed to load ${CUDA_MODULE}; continuing without explicit CUDA module"
 fi
-# If CUDA pulled in a python module, unload it before loading mamba
 if module list 2>&1 | grep -qi "python"; then
   module purge python >/dev/null 2>&1 || module unload python >/dev/null 2>&1 || true
 fi
-# Temporarily disable strict mode to avoid MKL_INTERFACE_LAYER unbound variable error
 set +u
 module load mamba/py3.12
 source /sw/pkgs/arc/mamba/py3.12/etc/profile.d/conda.sh
@@ -50,7 +48,6 @@ cd "${PROJECT_ROOT}"
 echo "Python executable: $(which python)"
 python -c "import torch; print('Torch', torch.__version__, 'CUDA:', torch.cuda.is_available())"
 
-# Build training command based on Optuna usage
 if [[ "${USE_OPTUNA}" == "1" ]]; then
   echo "Running with Optuna optimization (${N_TRIALS} trials, ${EPOCHS} epochs per trial)"
   python src/training/train.py \
@@ -75,9 +72,7 @@ else
     ${HYPERPARAMS}
 fi
 
-# Find the final model directory (for Optuna, it's not RUN_NAME)
 if [[ "${USE_OPTUNA}" == "1" ]]; then
-  # Find most recent non-trial directory
   RUN_PATH=$(find "${RUNS_DIR}" -maxdepth 1 -type d -name "finance-parser-*" ! -name "trial_*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
   if [[ -z "${RUN_PATH}" ]]; then
     echo "Warning: Could not find final Optuna model directory"

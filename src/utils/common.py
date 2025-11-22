@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-Common utilities shared across the project.
-Includes BoundingBox class, augmentation functions, YOLO I/O, and helper functions.
-"""
 
 from __future__ import annotations
 
@@ -14,25 +10,18 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 
-# Color constants for Michigan branding
 UM_BLUE = "#00274C"
 UM_MAIZE = "#FFCB05"
 
 
 def find_repo_root() -> Path:
-    """
-    Find the repository root by looking for marker directories.
-    Works in both Docker and local environments.
-    """
     current_path = Path(__file__).resolve()
 
-    # Handle Docker environment
     if "DOCKER_ENV" in os.environ or str(current_path).startswith("/app"):
         for parent in current_path.parents:
             if parent.name == "app":
                 return parent
 
-    # Original logic for non-Docker environments
     for parent in current_path.parents:
         if (
             (parent / "src").is_dir()
@@ -47,8 +36,6 @@ def find_repo_root() -> Path:
 
 
 class BoundingBox:
-    """YOLO format bounding box (class, x_center, y_center, width, height) - normalized [0, 1]"""
-
     def __init__(
         self,
         class_id: int,
@@ -66,7 +53,6 @@ class BoundingBox:
     def to_corners(
         self, img_width: int, img_height: int
     ) -> Tuple[float, float, float, float]:
-        """Convert YOLO format to corner coordinates (x_min, y_min, x_max, y_max) in pixels"""
         x_center_px = self.x_center * img_width
         y_center_px = self.y_center * img_height
         width_px = self.width * img_width
@@ -89,14 +75,11 @@ class BoundingBox:
         img_width: int,
         img_height: int,
     ) -> "BoundingBox":
-        """Create BoundingBox from corner coordinates (in pixels)"""
-        # Clamp coordinates to image boundaries
         x_min = max(0, min(x_min, img_width))
         y_min = max(0, min(y_min, img_height))
         x_max = max(0, min(x_max, img_width))
         y_max = max(0, min(y_max, img_height))
 
-        # Calculate center and dimensions in normalized format
         width_px = x_max - x_min
         height_px = y_max - y_min
         x_center_px = x_min + width_px / 2
@@ -110,16 +93,13 @@ class BoundingBox:
         return BoundingBox(class_id, x_center, y_center, width, height)
 
     def to_yolo_string(self) -> str:
-        """Convert to YOLO format string"""
         return f"{self.class_id} {self.x_center:.6f} {self.y_center:.6f} {self.width:.6f} {self.height:.6f}"
 
     def is_valid(self) -> bool:
-        """Check if bounding box is valid (has positive area)"""
         return self.width > 0.001 and self.height > 0.001
 
 
 def load_yolo_labels(label_path: Path) -> List[BoundingBox]:
-    """Load YOLO format labels from file"""
     boxes = []
     if not label_path.exists():
         return boxes
@@ -138,25 +118,19 @@ def load_yolo_labels(label_path: Path) -> List[BoundingBox]:
 
 
 def save_yolo_labels(boxes: List[BoundingBox], output_path: Path) -> None:
-    """Save bounding boxes to YOLO format file"""
     with open(output_path, "w") as f:
         for box in boxes:
             if box.is_valid():
                 f.write(box.to_yolo_string() + "\n")
 
 
-# Augmentation functions
-
-
 def horizontal_flip(
     img: np.ndarray, boxes: List[BoundingBox]
 ) -> Tuple[np.ndarray, List[BoundingBox]]:
-    """Flip image and boxes horizontally"""
     flipped_img = cv2.flip(img, 1)
     flipped_boxes = []
 
     for box in boxes:
-        # Flip x_center: new_x = 1 - old_x
         new_box = BoundingBox(
             box.class_id, 1.0 - box.x_center, box.y_center, box.width, box.height
         )
@@ -168,17 +142,11 @@ def horizontal_flip(
 def adjust_brightness_contrast(
     img: np.ndarray, alpha: float = 1.0, beta: int = 0
 ) -> np.ndarray:
-    """
-    Adjust image brightness and contrast
-    alpha: contrast (1.0 = no change, <1.0 = decrease, >1.0 = increase)
-    beta: brightness (0 = no change, negative = darker, positive = brighter)
-    """
     adjusted = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
     return adjusted
 
 
 def add_gaussian_noise(img: np.ndarray, mean: float = 0, std: float = 10) -> np.ndarray:
-    """Add Gaussian noise to image"""
     noise = np.random.normal(mean, std, img.shape).astype(np.uint8)
     noisy_img = cv2.add(img, noise)
     return noisy_img
@@ -187,36 +155,22 @@ def add_gaussian_noise(img: np.ndarray, mean: float = 0, std: float = 10) -> np.
 def adjust_hsv(
     img: np.ndarray, h_shift: int = 0, s_scale: float = 1.0, v_scale: float = 1.0
 ) -> np.ndarray:
-    """Adjust hue, saturation, and value"""
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV).astype(np.float32)
 
-    hsv[:, :, 0] = (hsv[:, :, 0] + h_shift) % 180  # Hue
-    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * s_scale, 0, 255)  # Saturation
-    hsv[:, :, 2] = np.clip(hsv[:, :, 2] * v_scale, 0, 255)  # Value
+    hsv[:, :, 0] = (hsv[:, :, 0] + h_shift) % 180
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * s_scale, 0, 255)
+    hsv[:, :, 2] = np.clip(hsv[:, :, 2] * v_scale, 0, 255)
 
     return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
 
 def adjust_background_color(img: np.ndarray, target_color: str = "white") -> np.ndarray:
-    """
-    Adjust background color to simulate different paper types.
-    This helps the model generalize to documents with different background colors.
-
-    Args:
-        img: Input image
-        target_color: Target background color - "white", "cream", "yellow", "gray", or "normalize"
-
-    Returns:
-        Image with adjusted background color
-    """
-    # Define color shifts for different paper types
-    # (brightness_factor, saturation_factor, additional_brightness)
     color_shifts = {
-        "white": (1.25, 0.3, 40),  # Brighten significantly, remove yellow tint
-        "cream": (1.15, 0.6, 20),  # Moderately brighten, reduce saturation
-        "yellow": (1.0, 1.0, 0),  # Keep as-is (original yellow tone)
-        "gray": (0.90, 0.5, 0),  # Slightly darken and desaturate
-        "normalize": (1.10, 0.6, 15),  # Normalize by reducing saturation
+        "white": (1.25, 0.3, 40),
+        "cream": (1.15, 0.6, 20),
+        "yellow": (1.0, 1.0, 0),
+        "gray": (0.90, 0.5, 0),
+        "normalize": (1.10, 0.6, 15),
     }
 
     if target_color not in color_shifts:
@@ -224,13 +178,10 @@ def adjust_background_color(img: np.ndarray, target_color: str = "white") -> np.
 
     brightness_factor, saturation_factor, brightness_add = color_shifts[target_color]
 
-    # Convert to HSV for easier manipulation
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV).astype(np.float32)
 
-    # Adjust saturation (reduce yellow/color tint)
     hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation_factor, 0, 255)
 
-    # Adjust value/brightness (multiply + add for stronger effect)
     hsv[:, :, 2] = np.clip(hsv[:, :, 2] * brightness_factor + brightness_add, 0, 255)
 
     return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)

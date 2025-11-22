@@ -123,7 +123,7 @@ Great Lakes HPC environment:
 - **great-lakes-env.yml** - Full conda environment with GPU support
 
 Key differences from Docker:
-- Full PyTorch (not CPU-only)
+- Full PyTorch
 - Includes pycocotools
 - GPU-enabled packages
 
@@ -150,13 +150,13 @@ sbatch src/training/batch_job.sh
 src/utils/monitoring/tail_latest_training_log.sh
 
 # Download results
-src/utils/deployment/sync_yolov8_run.sh finance-parser-20251112_143826
+src/utils/deployment/sync_yolov8_run.sh finance-parser-{timestamp}
 ```
 
 ### 3. Model Deployment
 ```bash
 # Switch active model
-src/utils/models/set_active_run.sh finance-parser-20251112_143826
+src/utils/models/set_active_run.sh finance-parser-{timestamp}
 
 # Restart Streamlit
 docker compose -f src/environments/docker/compose.yml restart app
@@ -218,18 +218,3 @@ docker compose -f src/environments/docker/compose.yml up -d db
 # Backup database
 docker compose -f src/environments/docker/compose.yml exec db pg_dump -U appuser appdb > backup.sql
 ```
-
-## Development Guidelines
-
-1. **Never commit secrets** - Use environment variables
-2. **Test locally before Great Lakes** - Use Docker for validation
-3. **Document significant changes** - Update relevant READMEs
-4. **Use git mv for file moves** - Preserves history
-5. **Keep paths relative** - Scripts should work in any environment
-
-## Support
-
-For issues or questions:
-- Check component-specific READMEs (training/, web/)
-- Review Docker logs for runtime errors
-- Verify environment variables are set correctly

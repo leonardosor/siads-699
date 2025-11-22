@@ -131,20 +131,20 @@ def get_best_model_metrics():
             # Read CSV, stripping whitespace from column names
             df = pd.read_csv(results_file)
             df.columns = df.columns.str.strip()
-            
+
             # Check if required columns exist
             map50_col = "metrics/mAP50(B)"
             if map50_col not in df.columns:
                 continue
-                
+
             # Find best epoch for this model
             best_idx = df[map50_col].idxmax()
             current_best_map50 = df.loc[best_idx, map50_col]
-            
+
             if current_best_map50 > best_map50:
                 best_map50 = current_best_map50
                 best_model_name = results_file.parent.name
-                
+
                 # Extract metrics
                 best_metrics = {
                     "Model": best_model_name,
@@ -152,12 +152,12 @@ def get_best_model_metrics():
                     "mAP50-95": df.loc[best_idx, "metrics/mAP50-95(B)"],
                     "Precision": df.loc[best_idx, "metrics/precision(B)"],
                     "Recall": df.loc[best_idx, "metrics/recall(B)"],
-                    "Epoch": df.loc[best_idx, "epoch"]
+                    "Epoch": df.loc[best_idx, "epoch"],
                 }
         except Exception as e:
             print(f"[WARN] Error reading {results_file}: {e}")
             continue
-            
+
     return best_metrics
 
 
@@ -168,17 +168,17 @@ def estimate_items_per_image(label_dir: Path):
     label_files = list(label_dir.glob("*.txt"))
     if not label_files:
         return 0.0
-    
+
     total_items = 0
     for lf in label_files:
         try:
-            with open(lf, 'r') as f:
+            with open(lf, "r") as f:
                 # Count non-empty lines
                 lines = [l.strip() for l in f if l.strip()]
                 total_items += len(lines)
         except Exception:
             continue
-            
+
     return total_items / len(label_files) if len(label_files) > 0 else 0.0
 
 
@@ -187,23 +187,23 @@ def calculate_sample_size_dirichlet(
     confidence_level: float,
     expected_proportion: float,
     items_per_image: float,
-    precision_omega: float
+    precision_omega: float,
 ):
     """
     Calculate sample size (number of images) using Dirichlet prior.
-    
+
     Based on the design factor for cluster sampling with Dirichlet-Multinomial distribution.
     Formula: k = (Z^2 * p * (1-p) / E^2) * (1/m) * ((m + omega) / (1 + omega))
-    
+
     Args:
         margin_of_error (E): Desired margin
         confidence_level: Confidence level (determines Z)
         expected_proportion (p): Expected accuracy
         items_per_image (m): Average number of items (voxels/words) per image
-        precision_omega (omega): Dirichlet precision parameter. 
+        precision_omega (omega): Dirichlet precision parameter.
                                  Large omega -> small inter-image variation.
                                  Small omega -> large inter-image variation.
-        
+
     Returns:
         (n_images, design_factor)
     """
@@ -211,22 +211,24 @@ def calculate_sample_size_dirichlet(
         return 0, 0.0
 
     z_score = stats.norm.ppf((1 + confidence_level) / 2)
-    
+
     # Standard simple random sampling size (in terms of items)
     # n_simple = (Z^2 * p * (1-p)) / E^2
-    n_simple = (z_score**2 * expected_proportion * (1 - expected_proportion)) / (margin_of_error**2)
-    
+    n_simple = (z_score**2 * expected_proportion * (1 - expected_proportion)) / (
+        margin_of_error**2
+    )
+
     # Design factor (Variance Inflation Factor)
     # f = (m + omega) / (1 + omega)
     # This accounts for the correlation of items within the same image
     design_factor = (items_per_image + precision_omega) / (1 + precision_omega)
-    
+
     # Total items required
     n_total_items = n_simple * design_factor
-    
+
     # Number of images
     n_images = n_total_items / items_per_image
-    
+
     return int(math.ceil(n_images)), design_factor
 
 
@@ -237,7 +239,7 @@ def main():
 
     # Dynamically load best model metrics
     metrics = get_best_model_metrics()
-    
+
     if metrics:
         print(f"\nBest Model Found: {metrics['Model']} (Epoch {metrics['Epoch']})")
         print(f"  mAP50:     {metrics['mAP50']:.4f}")
@@ -251,7 +253,7 @@ def main():
             "mAP50": 0.5,
             "mAP50-95": 0.0,
             "Precision": 0.0,
-            "Recall": 0.0
+            "Recall": 0.0,
         }
 
     # ========================================================================
@@ -331,7 +333,7 @@ def main():
     print(
         f"\nTarget: {desired_confidence*100:.0f}% confidence interval with ±{desired_margin*100:.0f}% margin"
     )
-    
+
     print(f"\n1. Conservative Estimate (assuming 50% accuracy):")
     print(f"   Required sample size: {required_n_conservative} images")
 
@@ -364,13 +366,17 @@ def main():
                 f"[PASS] SUFFICIENT (Meets realistic target of {required_n_realistic})"
             )
         else:
-            print(f"[WARN] INSUFFICIENT - need {required_n_realistic - actual_n} more images (for realistic target)")
+            print(
+                f"[WARN] INSUFFICIENT - need {required_n_realistic - actual_n} more images (for realistic target)"
+            )
 
             # What margin can we achieve?
             if actual_n > 0:
                 z_score = stats.norm.ppf((1 + desired_confidence) / 2)
                 # Use model accuracy for achievable margin calculation
-                achievable_margin = z_score * math.sqrt((model_accuracy * (1 - model_accuracy)) / actual_n)
+                achievable_margin = z_score * math.sqrt(
+                    (model_accuracy * (1 - model_accuracy)) / actual_n
+                )
                 print(
                     f"   With {actual_n} images and {model_accuracy*100:.1f}% accuracy, you achieve +/-{achievable_margin*100:.1f}% margin"
                 )
@@ -381,60 +387,66 @@ def main():
     print("\n" + "-" * 80)
     print("Advanced: Sample Size with Dirichlet Prior (Inter-image Variability)")
     print("-" * 80)
-    
+
     # Estimate items per image from ground-truth-augmented (more samples)
     aug_dir = DATA_DIR / "ground-truth-augmented"
     items_per_image = 0
     if aug_dir.exists():
         items_per_image = estimate_items_per_image(aug_dir)
-    
+
     if items_per_image > 0:
         print(f"Estimated items (boxes) per image: {items_per_image:.1f}")
-        
+
         # Calculate for different omega values
         # Omega represents precision (inverse of variance/correlation)
         # High omega = low inter-image variability (images are similar)
         # Low omega = high inter-image variability (images are very different)
-        print("\nRequired sample size (images) for different inter-image variability levels:")
-        
+        print(
+            "\nRequired sample size (images) for different inter-image variability levels:"
+        )
+
         # Show for Conservative (50%) and High Accuracy (90%) scenarios to illustrate the effect
         scenarios = [
             (0.5, "Conservative (50% acc)"),
             (0.9, "High Accuracy (90% acc)"),
-            (model_accuracy, f"Current Model ({model_accuracy*100:.1f}% acc)")
+            (model_accuracy, f"Current Model ({model_accuracy*100:.1f}% acc)"),
         ]
 
         for acc, acc_desc in scenarios:
             print(f"\nScenario: {acc_desc}")
-            print(f"{'Omega':<10} {'Variability':<20} {'Design Factor':<15} {'Images Required':<15}")
+            print(
+                f"{'Omega':<10} {'Variability':<20} {'Design Factor':<15} {'Images Required':<15}"
+            )
             print("-" * 65)
-            
+
             # Add measured Omega (4.5) to the list
             omega_levels = [
                 (4.5, "Measured (High Var)"),
-                (10, "High"), 
-                (50, "Medium"), 
-                (100, "Low")
+                (10, "High"),
+                (50, "Medium"),
+                (100, "Low"),
             ]
-            
+
             for omega, desc in omega_levels:
                 n_dirichlet, design_factor = calculate_sample_size_dirichlet(
                     margin_of_error=desired_margin,
                     confidence_level=desired_confidence,
                     expected_proportion=acc,
                     items_per_image=items_per_image,
-                    precision_omega=omega
+                    precision_omega=omega,
                 )
-                print(f"{omega:<10} {desc:<20} {design_factor:<15.2f} {n_dirichlet:<15}")
-            
+                print(
+                    f"{omega:<10} {desc:<20} {design_factor:<15.2f} {n_dirichlet:<15}"
+                )
+
         print("\nNote: Design Factor > 1 indicates we need more images because")
         print("      items within the same image are correlated (clustered).")
         print("      With very high accuracy (>99%), the base sample size is so small")
         print("      that the design factor has little absolute effect.")
-        
-        print("\n" + "="*80)
+
+        print("\n" + "=" * 80)
         print("HOW TO DETERMINE VARIABILITY (OMEGA) FOR YOUR DATASET")
-        print("="*80)
+        print("=" * 80)
         print("Omega is inversely related to the variance of accuracy across images.")
         print("Formula: Omega = (mean_acc * (1 - mean_acc) / variance_acc) - 1")
         print("\nMeasured Value for this dataset: Omega = 4.5 (High Variability)")
@@ -446,9 +458,15 @@ def main():
         print("   - Per-image accuracy (F1 score)")
         print("   - Variance of accuracy")
         print("   - Estimated Omega value")
-        print("\nIf you cannot run that script, you can estimate based on your data type:")
-        print("- High Variability (Omega ~ 10): Diverse document types, layouts, and qualities.")
-        print("- Low Variability (Omega ~ 100): Standardized forms, consistent scanning quality.")
+        print(
+            "\nIf you cannot run that script, you can estimate based on your data type:"
+        )
+        print(
+            "- High Variability (Omega ~ 10): Diverse document types, layouts, and qualities."
+        )
+        print(
+            "- Low Variability (Omega ~ 100): Standardized forms, consistent scanning quality."
+        )
     else:
         print("Could not estimate items per image (no label files found).")
 
@@ -472,7 +490,9 @@ def main():
 
     if n_val == 0 and actual_n > 0:
         n_val = actual_n
-        print(f"\nUsing ground-truth set size ({n_val} images) for confidence interval calculations")
+        print(
+            f"\nUsing ground-truth set size ({n_val} images) for confidence interval calculations"
+        )
         print("(Standard 'validation' directory was empty)")
     else:
         print(f"\nValidation set size: {n_val} original images")
@@ -485,13 +505,13 @@ def main():
 
         # Only process numeric metrics
         numeric_metrics = ["mAP50", "mAP50-95", "Precision", "Recall"]
-        
+
         for metric_name in numeric_metrics:
             if metric_name not in metrics:
                 continue
-                
+
             metric_value = metrics[metric_name]
-            
+
             margin, lower, upper = calculate_confidence_interval(
                 n_val, metric_value, desired_confidence
             )
@@ -510,7 +530,9 @@ def main():
                     f"  [WARN] Exceeds +/-{desired_margin*100:.0f}% target (need more validation samples)"
                 )
     else:
-        print("\n[WARN] No validation images found. Cannot calculate confidence intervals.")
+        print(
+            "\n[WARN] No validation images found. Cannot calculate confidence intervals."
+        )
 
     # ========================================================================
     # PART 4: Recommendations
@@ -548,7 +570,9 @@ For {desired_confidence*100:.0f}% confidence interval with +/-{desired_margin*10
     )
 
     if val_dir.exists() and actual_n >= required_n_realistic:
-        print("   [PASS] Your dataset meets statistical requirements for your model performance!")
+        print(
+            "   [PASS] Your dataset meets statistical requirements for your model performance!"
+        )
         print("   [PASS] You can confidently report 85% CI +/- 5%")
     else:
         print("   [WARN] Consider increasing validation set size")
