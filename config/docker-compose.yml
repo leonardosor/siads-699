@@ -55,9 +55,39 @@ services:
     networks:
       - devnet
 
+  slurm-controller:
+    image: xenonmiddleware/slurm:latest
+    container_name: slurm-controller
+    hostname: slurmctld
+    privileged: true
+    ports:
+      - "6817:6817"
+    volumes:
+      - slurm-data:/data
+      - ..:/workspace:cached
+      - //var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - devnet
+
+  slurm-node1:
+    image: xenonmiddleware/slurm:latest
+    container_name: slurm-node1
+    hostname: slurm-node1
+    privileged: true
+    volumes:
+      - slurm-data:/data
+      - ..:/workspace:cached
+      - //var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - slurm-controller
+    networks:
+      - devnet
+
 volumes:
   postgres-data: {}
   devcontainer-bashhistory: {}
+  slurm-data: {}
+  slurm-config: {}
 
 networks:
   devnet: {}

@@ -5,7 +5,7 @@
 
 ## Top 5 Models
 
-### 3. finance-parser-20251115_234720
+### 1. finance-parser-20251115_234720
 
 - **Epochs:** 100
 - **Best mAP50:** 0.9949 (99.49%) at epoch 73
@@ -20,6 +20,14 @@
 - **Best mAP50-95:** 0.9056 (90.56%)
 - **Best Precision:** 0.9773 (97.73%)
 - **Best Recall:** 0.9526 (95.26%)
+
+### 4. finance-parser-20251123_033516
+
+- **Epochs:** 200
+- **Best mAP50:** 0.9880 (98.80%) at epoch 150
+- **Best mAP50-95:** 0.8253 (82.53%)
+- **Best Precision:** 0.9862 (98.62%)
+- **Best Recall:** 0.9868 (98.68%)
 
 ### 7. trial_10
 
@@ -37,20 +45,12 @@
 - **Best Precision:** 0.9807 (98.07%)
 - **Best Recall:** 0.9379 (93.79%)
 
-### 10. trial_3
-
-- **Epochs:** 50
-- **Best mAP50:** 0.9688 (96.88%) at epoch 48
-- **Best mAP50-95:** 0.7309 (73.09%)
-- **Best Precision:** 0.9657 (96.56%)
-- **Best Recall:** 0.9279 (92.79%)
-
 ## Overall Statistics
 
-- **Average mAP50:** 0.8539
+- **Average mAP50:** 0.8514
 - **Max mAP50:** 0.9949
-- **Min mAP50:** 0.4483
-- **Models with mAP50 > 0.90:** 11
+- **Min mAP50:** 0.2527
+- **Models with mAP50 > 0.90:** 12
 
 ## Visualizations
 

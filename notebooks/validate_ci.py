@@ -89,8 +89,17 @@ def identify_original_images(image_dir: Path):
     """
     Identify original vs augmented images.
     Augmented images have pattern: *_aug{N}_{type}.jpg
+    
+    Checks for images in both the directory itself and an 'images/' subdirectory.
     """
-    image_files = sorted(image_dir.glob("*.jpg")) + sorted(image_dir.glob("*.png"))
+    # Check if there's an 'images' subdirectory (YOLO format)
+    images_subdir = image_dir / "images"
+    if images_subdir.exists() and images_subdir.is_dir():
+        search_dir = images_subdir
+    else:
+        search_dir = image_dir
+    
+    image_files = sorted(search_dir.glob("*.jpg")) + sorted(search_dir.glob("*.png"))
 
     original_images = []
     augmented_images = []
@@ -183,8 +192,17 @@ def load_omega_value():
 def estimate_items_per_image(label_dir: Path):
     """
     Estimate the average number of items (bounding boxes) per image.
+    
+    Checks for labels in both the directory itself and a 'labels/' subdirectory.
     """
-    label_files = list(label_dir.glob("*.txt"))
+    # Check if there's a 'labels' subdirectory (YOLO format)
+    labels_subdir = label_dir / "labels"
+    if labels_subdir.exists() and labels_subdir.is_dir():
+        search_dir = labels_subdir
+    else:
+        search_dir = label_dir
+    
+    label_files = list(search_dir.glob("*.txt"))
     if not label_files:
         return 0.0
 

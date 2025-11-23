@@ -137,9 +137,9 @@ def save_split(
 def prepare_groundtruth(
     ground_truth_dir: Path,
     output_dir: Path,
-    train_ratio: float = 0.7,
+    train_ratio: float = 0.8,
     val_ratio: float = 0.15,
-    test_ratio: float = 0.15,
+    test_ratio: float = 0.05,
     backup_existing: bool = False,
     seed: int = 42,
 ) -> None:
@@ -173,7 +173,7 @@ def prepare_groundtruth(
         if label_path.exists():
             pairs.append((img_path, label_path))
         else:
-            print(f"⚠️  No label for: {img_path.name}")
+            print(f"[WARN] No label for: {img_path.name}")
 
     print(f"Found {len(pairs)} image-label pairs")
 
@@ -200,7 +200,7 @@ def prepare_groundtruth(
             shutil.copy2(img_path, split_img_dir / img_path.name)
             shutil.copy2(lbl_path, split_lbl_dir / lbl_path.name)
 
-        print(f"  ✓ {len(split_pairs)} images and labels copied to {split_name}/")
+        print(f"  [OK] {len(split_pairs)} images and labels copied to {split_name}/")
 
     print("\n" + "=" * 70)
     print("DATASET PREPARATION COMPLETE")
@@ -296,7 +296,7 @@ def prepare_augmented(
     train_ratio: float = 0.7,
     val_ratio: float = 0.15,
     test_ratio: float = 0.15,
-    keep_originals: bool = False,
+    keep_originals: bool = True,
     backup_existing: bool = False,
     seed: int = 42,
 ) -> None:
@@ -337,7 +337,7 @@ def prepare_augmented(
         if label_path.exists():
             image_label_pairs.append((img_path, label_path))
         else:
-            print(f"⚠️  No label for: {img_path.name}, skipping")
+            print(f"[WARN] No label for: {img_path.name}, skipping")
 
     print(f"Found {len(image_label_pairs)} ground-truth image-label pairs")
     print()
@@ -349,7 +349,7 @@ def prepare_augmented(
     for img_path, label_path in image_label_pairs:
         img = cv2.imread(str(img_path))
         if img is None:
-            print(f"⚠️  Could not load {img_path.name}, skipping")
+            print(f"[WARN] Could not load {img_path.name}, skipping")
             continue
 
         boxes = load_yolo_labels(label_path)
@@ -406,7 +406,7 @@ def prepare_augmented(
             label_path = split_lbl_dir / label_filename
             save_yolo_labels(boxes, label_path)
 
-        print(f"  ✓ {len(samples)} samples written to {split_name}/")
+        print(f"  [OK] {len(samples)} samples written to {split_name}/")
 
     print()
     print("=" * 70)
@@ -670,7 +670,7 @@ Examples:
     augmented_parser.add_argument(
         "--augmentations-per-image",
         type=int,
-        default=50,
+        default=10,
         help="Number of augmented versions per ground-truth image",
     )
     augmented_parser.add_argument(
