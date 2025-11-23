@@ -2,6 +2,8 @@
 
 Interactive web interface for running YOLOv8 inference on financial document images.
 
+For quickstart instructions, see the [main README](../../README.md) or [quick start guide](../../docs/README.md).
+
 ## Features
 
 - Upload multiple images (JPG/PNG)
@@ -11,37 +13,6 @@ Interactive web interface for running YOLOv8 inference on financial document ima
 - Detection table with class labels and confidence scores
 - Download annotated images
 - University of Michigan branded (Maize and Blue colors)
-
-## Quick Start
-
-### Using Docker (Recommended)
-
-```bash
-# Start the application
-docker compose -f src/environments/docker/compose.yml up -d
-
-# Access the application
-open http://localhost:8501
-
-# View logs
-docker compose -f src/environments/docker/compose.yml logs -f app
-
-# Stop the application
-docker compose -f src/environments/docker/compose.yml down
-```
-
-### Local Development
-
-```bash
-# Install dependencies
-pip install -r src/environments/docker/requirements.txt
-
-# Set model path (optional, defaults to models/trained/best.pt)
-export MODEL_PATH=models/trained/best.pt
-
-# Run Streamlit
-streamlit run src/web/streamlit_application.py --server.port 8501
-```
 
 ## Usage
 
@@ -81,32 +52,9 @@ streamlit run src/web/streamlit_application.py --server.port 8501
 
 ### Model Selection
 
-The application loads the model from `MODEL_PATH` environment variable.
+The application loads the model from `MODEL_PATH` environment variable (default: `models/trained/best.pt`).
 
-**To change models:**
-
-```bash
-# Option 1: Set environment variable
-export MODEL_PATH=/path/to/model.pt
-streamlit run src/web/streamlit_application.py
-
-# Option 2: Use set_active_run script
-src/utils/models/set_active_run.sh finance-parser-20251112_143826
-docker compose -f src/environments/docker/compose.yml restart app
-```
-
-### Docker Configuration
-
-Edit `src/environments/docker/compose.yml`:
-
-```yaml
-services:
-  app:
-    environment:
-      MODEL_PATH: /app/models/trained/best.pt  # Change model
-    ports:
-      - "8501:8501"  # Change port if needed
-```
+To change models, see [Managing YOLO Models](../../docs/README.md#managing-yolo-models) in the quick start guide.
 
 ## Architecture
 

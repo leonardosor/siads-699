@@ -2,6 +2,8 @@
 
 Test suite for the SIADS 699 Capstone project.
 
+For general project information, see the [main README](../README.md).
+
 ## Structure
 
 ```

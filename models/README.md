@@ -2,6 +2,8 @@
 
 This directory contains all YOLOv8 model weights, training runs, and archived experiments for the SIADS 699 Capstone project.
 
+For quickstart on model management, see the [quick start guide](../docs/README.md#managing-yolo-models). For general project information, see the [main README](../README.md).
+
 ## Directory Structure
 
 ```
