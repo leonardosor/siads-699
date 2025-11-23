@@ -22,7 +22,7 @@ _model_env = os.getenv("MODEL_PATH")
 DEFAULT_MODEL_PATH = (
     Path(_model_env)
     if _model_env
-    else Path(__file__).resolve().parents[2] / "models" / "trained" / "best.pt"
+    else Path(__file__).resolve().parents[2] / "models" / "production" / "best.pt"
 )
 ALLOWED_TYPES = ("jpg", "jpeg", "png", "pdf")
 
