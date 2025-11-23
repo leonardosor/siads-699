@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=final_training
+#SBATCH --job-name=post-optuna-final
 #SBATCH --account=siads699f25_class
 #SBATCH --partition=spgpu
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=32G
+#SBATCH --mem=16G
 #SBATCH --time=08:00:00
 #SBATCH --mail-user=lcedeno@umich.edu
 #SBATCH --mail-type=END,FAIL

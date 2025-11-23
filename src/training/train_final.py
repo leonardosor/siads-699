@@ -541,6 +541,11 @@ def main() -> None:
     # Generate run name
     run_name = args.name or f"final-training-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
+    # Set a fixed seed for reproducibility
+    torch.manual_seed(42)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(42)
+
     # Create project directory
     project_dir.mkdir(parents=True, exist_ok=True)
 
