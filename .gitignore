@@ -146,6 +146,8 @@ notebooks/*.pdf
 !data/raw/rvl-cdip-invoice/README.md
 
 *png*
+!architecture_0.png
+!architecture_1.png
 *log
 *jpg
 

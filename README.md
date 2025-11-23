@@ -2,16 +2,64 @@
 ## Financial Form Text Extractor
 
 ### Overview
-We are attempting to build a state of the art, full stack, text extraction application that performs on scanned images of forms. Our application's architecture will include manually labelled (Label Studio) training images (PNG, JPEG, PDFs) with bounded boxes of "header", "body" and "footer" text. This data will be used to fine tune a convolutional neural network (Yolov8). Our application will then extract text only from the body of forms (Tesseract 5). This extracted data will be stored in a relational database (postgreSQL). Our application will ultimately follow a micro-services pattern, implemented with Docker, and tied together in a web application front-end (Streamlit).
+A full-stack text extraction application for scanned financial forms, combining YOLOv8 object detection, Tesseract OCR, PostgreSQL storage, and a Streamlit web interface. The system uses manually labeled training data (Label Studio) to fine-tune a convolutional neural network for detecting document regions (header, body, footer), enabling targeted text extraction from form bodies.
 
 ### AI Assistance Disclosure
 Consistent with MADS academic integrity guidelines, assume that OpenAI's ChatGPT 5 (large language model, 2024 release) materially assisted in producing the source code within this repository. When citing or reusing this work, please include the acknowledgement: *OpenAI. (2024). ChatGPT 5 (large language model) [Computer software]. Assistance provided to the SIADS 699 Financial Form Text Extractor project.*
 
-# Source Code Directory
+## Table of Contents
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Repository Structure](#repository-structure)
+- [Key Components](#key-components)
+- [Common Workflows](#common-workflows)
+- [Documentation](#documentation)
+- [Environment Configuration](#environment-configuration)
 
-This directory contains all source code, utilities, configurations, and deployment files for the SIADS 699 Capstone project.
+## Quick Start
 
-## Directory Structure
+### Prerequisites
+- Docker and Docker Compose
+- Trained YOLOv8 model weights at [models/trained/best.pt](models/trained/best.pt)
+
+### Launch the Application
+
+```bash
+# 1. Start all services
+docker compose -f src/environments/docker/compose.yml up --build --remove-orphans
+
+# 2. Access Streamlit UI
+open http://localhost:8501
+
+# 3. Tear down when finished
+docker compose -f src/environments/docker/compose.yml down --volumes
+```
+
+### What You Can Do
+- Upload JPG/PNG document images for YOLOv8 inference
+- Adjust confidence and IoU thresholds in real-time
+- View detections with University of Michigan branded annotations
+- Download annotated images
+
+See [docs/README.md](docs/README.md) for detailed quickstart guide and [src/web/README.md](src/web/README.md) for Streamlit usage.
+
+## Architecture
+
+### Logical Architecture
+![Logical Architecture](/docs/imgs/architecture_1.png)
+
+### Physical Architecture
+![Physical Architecture](/docs/imgs/architecture_0.png)
+
+### Technology Stack
+- **Object Detection**: YOLOv8 (Ultralytics)
+- **OCR**: Tesseract 5
+- **Web Interface**: Streamlit
+- **Database**: PostgreSQL 15
+- **Containerization**: Docker Compose
+- **Training Environment**: Great Lakes HPC (University of Michigan)
+
+## Repository Structure
 
 ```
 src/
