@@ -3,9 +3,9 @@
 #SBATCH --account=siads699f25_class
 #SBATCH --partition=spgpu
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=30G
-#SBATCH --time=04:00:00  # Increase to 08:00:00 for Optuna optimization
+#SBATCH --cpus-per-task=12
+#SBATCH --mem=32G
+#SBATCH --time=08:00:00  
 #SBATCH --mail-user=lcedeno@umich.edu
 #SBATCH --mail-type=END,FAIL
 #SBATCH --output=/home/%u/%x-%j.log
@@ -14,15 +14,15 @@ set -euo pipefail
 
 PROJECT_ROOT=${PROJECT_ROOT:-/home/${USER}/699/siads-699}
 RUN_NAME=${RUN_NAME:-finance-parser-$(date +%Y%m%d_%H%M%S)}
-EPOCHS=${EPOCHS:-250}
+EPOCHS=${EPOCHS:-150}
 BATCH=${BATCH:-4}
 IMGSZ=${IMGSZ:-1024}
 PATIENCE=${PATIENCE:-60}
 HYPERPARAMS=${HYPERPARAMS:-"--cache"}
 
 # Optuna hyperparameter optimization
-USE_OPTUNA=${USE_OPTUNA:-0}  # Set to 1 to enable Optuna
-N_TRIALS=${N_TRIALS:-20}      # Number of Optuna trials
+USE_OPTUNA=${USE_OPTUNA:-1}  # Set to 0 to disable Optuna (now enabled by default)
+N_TRIALS=${N_TRIALS:-10}      # Number of Optuna trials
 
 RUNS_DIR="${PROJECT_ROOT}/models/experiments/active"
 ARTIFACT_DIR="${PROJECT_ROOT}/models/artifacts"

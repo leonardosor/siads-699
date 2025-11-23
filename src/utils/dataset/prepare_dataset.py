@@ -300,14 +300,14 @@ def prepare_augmented(
     backup_existing: bool = False,
     seed: int = 42,
 ) -> None:
-    """Generate augmented dataset from ground-truth images"""
+    """Generate augmented dataset from ground-truth images (memory-efficient version)"""
     validate_ratios(train_ratio, val_ratio, test_ratio)
 
     random.seed(seed)
     np.random.seed(seed)
 
     print("=" * 70)
-    print("PREPARING AUGMENTED GROUND-TRUTH DATASET")
+    print("PREPARING AUGMENTED GROUND-TRUTH DATASET (MEMORY-EFFICIENT)")
     print("=" * 70)
     print(f"Ground-truth source: {ground_truth_dir}")
     print(f"Output directory: {output_dir}")
@@ -340,80 +340,120 @@ def prepare_augmented(
             print(f"⚠️  No label for: {img_path.name}, skipping")
 
     print(f"Found {len(image_label_pairs)} ground-truth image-label pairs")
+    
+    # Calculate total samples for split
+    samples_per_image = augmentations_per_image + (1 if keep_originals else 0)
+    total_samples = len(image_label_pairs) * samples_per_image
+    
+    print(f"Will generate {samples_per_image} samples per image")
+    print(f"Total samples to generate: {total_samples}")
     print()
 
-    # Generate all augmented samples
-    print("Generating augmented samples...")
-    all_samples = []
-
-    for img_path, label_path in image_label_pairs:
+    # Create output directories
+    splits = {
+        "training": train_ratio,
+        "validation": val_ratio,
+        "testing": test_ratio,
+    }
+    
+    split_dirs = {}
+    for split_name in splits.keys():
+        img_dir = output_dir / split_name / "images"
+        lbl_dir = output_dir / split_name / "labels"
+        img_dir.mkdir(parents=True, exist_ok=True)
+        lbl_dir.mkdir(parents=True, exist_ok=True)
+        split_dirs[split_name] = (img_dir, lbl_dir)
+    
+    # Track counts
+    split_counts = {split: 0 for split in splits.keys()}
+    
+    # Pre-generate deterministic split assignments for each sample
+    # This avoids loading all samples into memory
+    print("Pre-computing split assignments...")
+    split_assignments = []
+    for _ in range(total_samples):
+        rand_val = random.random()
+        cumulative = 0.0
+        assigned_split = "training"
+        for split_name, ratio in splits.items():
+            cumulative += ratio
+            if rand_val < cumulative:
+                assigned_split = split_name
+                break
+        split_assignments.append(assigned_split)
+    
+    print("Generating and saving augmented samples (streaming mode)...")
+    sample_idx = 0
+    
+    # Process each ground-truth image
+    for img_idx, (img_path, label_path) in enumerate(image_label_pairs):
+        # Load image and labels
         img = cv2.imread(str(img_path))
         if img is None:
             print(f"⚠️  Could not load {img_path.name}, skipping")
+            # Skip the pre-allocated samples for this image
+            sample_idx += samples_per_image
             continue
 
         boxes = load_yolo_labels(label_path)
         stem = img_path.stem
 
-        # Keep original if requested
+        # Process original if requested
         if keep_originals:
-            all_samples.append((img.copy(), boxes.copy(), stem, "original"))
-
-        # Generate augmentations
-        for i in range(augmentations_per_image):
-            aug_img, aug_boxes, aug_name = apply_random_augmentation(img, boxes)
-            all_samples.append((aug_img, aug_boxes, stem, f"aug{i:03d}_{aug_name}"))
-
-    print(f"Generated {len(all_samples)} total samples (originals + augmentations)")
-    print()
-
-    # Split into train/val/test
-    train_samples, val_samples, test_samples = split_samples(
-        all_samples, train_ratio, val_ratio, test_ratio, seed
-    )
-
-    n_total = len(all_samples)
-    print(f"Split sizes:")
-    print(
-        f"  Training:   {len(train_samples):6d} ({len(train_samples)/n_total*100:.1f}%)"
-    )
-    print(f"  Validation: {len(val_samples):6d} ({len(val_samples)/n_total*100:.1f}%)")
-    print(
-        f"  Testing:    {len(test_samples):6d} ({len(test_samples)/n_total*100:.1f}%)"
-    )
-    print()
-
-    # Save splits
-    splits = {
-        "training": train_samples,
-        "validation": val_samples,
-        "testing": test_samples,
-    }
-
-    print("Saving augmented dataset...")
-    for split_name, samples in splits.items():
-        split_img_dir, split_lbl_dir = save_split(split_name, samples, output_dir)
-
-        print(f"  Writing {split_name} split ({len(samples)} samples)...")
-        for idx, (img, boxes, stem, aug_suffix) in enumerate(samples):
+            split_name = split_assignments[sample_idx]
+            img_dir, lbl_dir = split_dirs[split_name]
+            
             # Save image
-            img_filename = f"{stem}_{aug_suffix}.jpg"
-            img_path = split_img_dir / img_filename
-            cv2.imwrite(str(img_path), img)
-
+            img_filename = f"{stem}_original.jpg"
+            cv2.imwrite(str(img_dir / img_filename), img)
+            
             # Save labels
-            label_filename = f"{stem}_{aug_suffix}.txt"
-            label_path = split_lbl_dir / label_filename
-            save_yolo_labels(boxes, label_path)
+            label_filename = f"{stem}_original.txt"
+            save_yolo_labels(boxes, lbl_dir / label_filename)
+            
+            split_counts[split_name] += 1
+            sample_idx += 1
 
-        print(f"  ✓ {len(samples)} samples written to {split_name}/")
+        # Generate and save augmentations one at a time
+        for i in range(augmentations_per_image):
+            # Generate augmentation
+            aug_img, aug_boxes, aug_name = apply_random_augmentation(img, boxes)
+            
+            # Determine split
+            split_name = split_assignments[sample_idx]
+            img_dir, lbl_dir = split_dirs[split_name]
+            
+            # Save image
+            img_filename = f"{stem}_aug{i:03d}_{aug_name}.jpg"
+            cv2.imwrite(str(img_dir / img_filename), aug_img)
+            
+            # Save labels  
+            label_filename = f"{stem}_aug{i:03d}_{aug_name}.txt"
+            save_yolo_labels(aug_boxes, lbl_dir / label_filename)
+            
+            split_counts[split_name] += 1
+            sample_idx += 1
+            
+            # Free memory explicitly
+            del aug_img, aug_boxes
+        
+        # Free memory for this image
+        del img, boxes
+        
+        # Progress update every 10 images
+        if (img_idx + 1) % 10 == 0:
+            print(f"  Processed {img_idx + 1}/{len(image_label_pairs)} ground-truth images...")
 
     print()
     print("=" * 70)
     print("DATASET PREPARATION COMPLETE")
     print("=" * 70)
     print(f"Ground-truth images used: {len(image_label_pairs)}")
-    print(f"Total augmented samples:  {len(all_samples)}")
+    print(f"Total augmented samples:  {total_samples}")
+    print()
+    print("Split distribution:")
+    for split_name, count in split_counts.items():
+        print(f"  {split_name:12s}: {count:6d} samples ({count/total_samples*100:.1f}%)")
     print()
     print("Dataset splits:")
     print(f"  Training:   {output_dir / 'training'}")
