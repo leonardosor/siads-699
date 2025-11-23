@@ -29,7 +29,7 @@ set -euo pipefail
 
 PROJECT_ROOT=${PROJECT_ROOT:-/home/${USER}/699/siads-699}
 SEEDS=${SEEDS:-"42 1337 2025"}
-EPOCHS_LIST=${EPOCHS_LIST:-"10"}
+EPOCHS_LIST=${EPOCHS_LIST:-"100"}
 EXTRA_FLAGS=${EXTRA_FLAGS:-"--cache"}
 DEVICE=${DEVICE:-0}
 DEPLOY_MODE=${DEPLOY_MODE:-best}
@@ -79,7 +79,7 @@ touch "${SUMMARY_FILE}"; echo "Batch Final Training Summary" >> "${SUMMARY_FILE}
 
 for seed in ${SEEDS}; do
   for epochs in ${EPOCHS_LIST}; do
-    RUN_NAME="final-batch-seed${seed}-e${epochs}-$(date +%H%M%S)"
+    RUN_NAME="final-batch${seed}-e${epochs}-$(date +%H%M%S)"
     echo "=== Running: ${RUN_NAME} (seed=${seed}, epochs=${epochs}) ==="
     TRAIN_CMD=(python src/training/train_final.py --epochs "${epochs}" --device "${DEVICE}" --name "${RUN_NAME}" ${EXTRA_FLAGS})
     if [[ -f "${PARAMS_JSON}" ]]; then
