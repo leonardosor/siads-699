@@ -13,7 +13,7 @@ cache: true
 device: '0'
 workers: 8
 project: /home/lcedeno/699/siads-699/models/experiments/final
-name: finance-parser-final-20251123_161952
+name: yolo-final-20251123_174043
 exist_ok: true
 pretrained: true
 optimizer: SGD
@@ -103,4 +103,4 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: botsort.yaml
-save_dir: /home/lcedeno/699/siads-699/models/experiments/final/finance-parser-final-20251123_161952
+save_dir: /home/lcedeno/699/siads-699/models/experiments/final/yolo-final-20251123_174043

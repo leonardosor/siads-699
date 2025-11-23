@@ -1,4 +1,6 @@
-path: /workspace/data/input/ground-truth
+# Dataset root set to absolute path to avoid resolution issues on Windows and inside containers.
+# Ultralytics will join `train`, `val`, `test` with this root.
+path: D:/docs/MADS/699/data/input
 train: training/images
 val: validation/images
 test: testing/images

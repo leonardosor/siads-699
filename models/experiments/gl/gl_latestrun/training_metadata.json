@@ -1,0 +1,33 @@
+{
+  "training_info": {
+    "start_time": "2025-11-23T16:32:42.478172",
+    "epochs": 100,
+    "data_config": "/home/lcedeno/699/siads-699/src/training/finance-image-parser.yaml",
+    "initial_weights": "/home/lcedeno/699/siads-699/models/pretrained/yolov8n.pt",
+    "save_directory": "/home/lcedeno/699/siads-699/models/experiments/final/finance-parser-final-20251123_161952"
+  },
+  "hyperparameters": {
+    "metadata": {
+      "study_name": "yolov8_optimization",
+      "trial_number": 1,
+      "best_map50_95": 0.9660184452961326,
+      "direction": "MAXIMIZE"
+    },
+    "parameters": {
+      "batch": 32,
+      "degrees": 3.6833153475707126,
+      "fliplr": 0.23474008740061184,
+      "hsv_h": 0.008551800853056624,
+      "hsv_s": 0.5924533528250308,
+      "hsv_v": 0.47691706693705704,
+      "lr0": 0.0005640789830602177,
+      "lrf": 3.809089339188386e-05,
+      "mixup": 0.16249896734507882,
+      "momentum": 0.8867625372701172,
+      "mosaic": 0.5887446965157003,
+      "optimizer": "Adam",
+      "weight_decay": 6.550529002031311e-05
+    }
+  },
+  "parameter_source": {}
+}

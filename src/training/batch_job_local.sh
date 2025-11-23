@@ -77,7 +77,6 @@ if [[ "${USE_OPTUNA}" == "1" ]]; then
         --device 0 \
         --optimize \
         --n-trials ${N_TRIALS} \
-        --clean-broken \
         ${HYPERPARAMS}"
 else
     echo "=========================================="

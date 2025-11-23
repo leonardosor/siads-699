@@ -8,7 +8,7 @@ Modes:
   parquet     - Extract dataset from parquet files
 
 Examples:
-    # Simple split (defaults: train 0.7 / val 0.15 / test 0.15)
+    # Simple split (defaults: train 0.7 / val 0.25 / test 0.05)
     python prepare_dataset.py groundtruth
 
     # Augmented (default 10 augmentations per image; increase for larger dataset)
@@ -138,8 +138,8 @@ def prepare_groundtruth(
     ground_truth_dir: Path,
     output_dir: Path,
     train_ratio: float = 0.7,  # aligned with CLI default
-    val_ratio: float = 0.15,  # aligned with CLI default
-    test_ratio: float = 0.15,  # aligned with CLI default
+    val_ratio: float = 0.25,  # aligned with CLI default (updated)
+    test_ratio: float = 0.05,  # aligned with CLI default (updated)
     backup_existing: bool = False,
     seed: int = 42,
 ) -> None:
@@ -294,8 +294,8 @@ def prepare_augmented(
     output_dir: Path,
     augmentations_per_image: int = 10,  # aligned with CLI default
     train_ratio: float = 0.7,  # aligned with CLI default
-    val_ratio: float = 0.15,  # aligned with CLI default
-    test_ratio: float = 0.15,  # aligned with CLI default
+    val_ratio: float = 0.25,  # aligned with CLI default (updated)
+    test_ratio: float = 0.05,  # aligned with CLI default (updated)
     keep_originals: bool = True,
     backup_existing: bool = False,
     seed: int = 42,
@@ -541,8 +541,8 @@ def prepare_parquet(
     raw_dir: Path,
     output_dir: Path,
     train_ratio: float = 0.7,
-    val_ratio: float = 0.15,
-    test_ratio: float = 0.15,
+    val_ratio: float = 0.25,  # updated default
+    test_ratio: float = 0.05,  # updated default
     limit_per_file: Optional[int] = None,
     backup_existing: bool = False,
     seed: int = 42,
@@ -674,10 +674,10 @@ Examples:
         "--train-ratio", type=float, default=0.7, help="Training set ratio"
     )
     groundtruth_parser.add_argument(
-        "--val-ratio", type=float, default=0.15, help="Validation set ratio"
+        "--val-ratio", type=float, default=0.25, help="Validation set ratio (updated default)"
     )
     groundtruth_parser.add_argument(
-        "--test-ratio", type=float, default=0.15, help="Test set ratio"
+        "--test-ratio", type=float, default=0.05, help="Test set ratio (updated default)"
     )
     groundtruth_parser.add_argument(
         "--backup-existing",
@@ -715,10 +715,10 @@ Examples:
         "--train-ratio", type=float, default=0.7, help="Training set ratio"
     )
     augmented_parser.add_argument(
-        "--val-ratio", type=float, default=0.15, help="Validation set ratio"
+        "--val-ratio", type=float, default=0.25, help="Validation set ratio (updated default)"
     )
     augmented_parser.add_argument(
-        "--test-ratio", type=float, default=0.15, help="Test set ratio"
+        "--test-ratio", type=float, default=0.05, help="Test set ratio (updated default)"
     )
     augmented_parser.add_argument(
         "--keep-originals",
@@ -755,10 +755,10 @@ Examples:
         "--train-ratio", type=float, default=0.7, help="Training set ratio"
     )
     parquet_parser.add_argument(
-        "--val-ratio", type=float, default=0.15, help="Validation set ratio"
+        "--val-ratio", type=float, default=0.25, help="Validation set ratio (updated default)"
     )
     parquet_parser.add_argument(
-        "--test-ratio", type=float, default=0.15, help="Test set ratio"
+        "--test-ratio", type=float, default=0.05, help="Test set ratio (updated default)"
     )
     parquet_parser.add_argument(
         "--limit-per-file",

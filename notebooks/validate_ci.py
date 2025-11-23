@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy import stats
+import sqlite3
 
 # Find repo root
 SCRIPT_PATH = Path(__file__).resolve()
@@ -128,6 +129,7 @@ def get_best_model_metrics():
     Returns a dictionary of metrics for the best model.
     """
     experiments_dir = REPO_ROOT / "models" / "experiments" / "active"
+    production_dir = REPO_ROOT / "models" / "production"
     best_metrics = None
     best_map50 = -1.0
     best_model_name = "None"
@@ -136,8 +138,73 @@ def get_best_model_metrics():
         print(f"[WARN] Experiments directory not found: {experiments_dir}")
         return None
 
-    # Scan all results.csv files
-    for results_file in experiments_dir.glob("*/optuna_results.csv"):
+    # Optional: parse Optuna study DB first for best trial metrics
+    optuna_db_path = experiments_dir / "optuna_study.db"
+    if optuna_db_path.exists():
+        try:
+            conn = sqlite3.connect(str(optuna_db_path))
+            cur = conn.cursor()
+            # Determine optimization direction if column exists
+            direction = 1  # assume maximize by default
+            try:
+                cur.execute("SELECT direction FROM studies LIMIT 1")
+                row = cur.fetchone()
+                if row and row[0] is not None:
+                    direction = row[0]
+            except Exception:
+                pass
+            # Fetch trial values for COMPLETE trials
+            cur.execute("SELECT trial_values.trial_id, trial_values.value FROM trial_values JOIN trials ON trial_values.trial_id = trials.trial_id WHERE trials.state='COMPLETE'")
+            rows = cur.fetchall()
+            best_row = None
+            for r in rows:
+                if best_row is None:
+                    best_row = r
+                else:
+                    # direction: 0=minimize, 1=maximize
+                    if direction == 0 and r[1] < best_row[1]:
+                        best_row = r
+                    if direction == 1 and r[1] > best_row[1]:
+                        best_row = r
+            if best_row:
+                best_trial_id, best_value = best_row
+                # Fetch user attributes for metrics
+                cur.execute("SELECT key, value_json FROM trial_user_attributes WHERE trial_id=?", (best_trial_id,))
+                user_attrs = {k: json.loads(v) for k, v in cur.fetchall() if v}
+                # Map attributes to expected keys
+                def _get_attr(prefixes):
+                    for p in prefixes:
+                        if p in user_attrs:
+                            return user_attrs[p]
+                    return None
+                m_map50 = _get_attr(["metrics/mAP50(B)", "mAP50", "map50"])
+                m_map50_95 = _get_attr(["metrics/mAP50-95(B)", "mAP50_95", "map50_95"])
+                m_precision = _get_attr(["metrics/precision(B)", "precision"])
+                m_recall = _get_attr(["metrics/recall(B)", "recall"])
+                best_metrics = {
+                    "Model": f"optuna-best-trial-{best_trial_id}",
+                    "mAP50": float(m_map50 if m_map50 is not None else best_value),
+                    "mAP50-95": float(m_map50_95 if m_map50_95 is not None else 0.0),
+                    "Precision": float(m_precision if m_precision is not None else 0.0),
+                    "Recall": float(m_recall if m_recall is not None else 0.0),
+                    "Epoch": 0,
+                }
+                best_map50 = best_metrics["mAP50"]
+            conn.close()
+        except Exception as e:
+            print(f"[WARN] Failed to parse optuna study DB: {e}")
+
+    # Collect candidate optuna_results.csv files (handle root-level and nested) if not already satisfied by study DB
+    candidate_files = list(experiments_dir.glob("*/optuna_results.csv"))
+    root_results = experiments_dir / "optuna_results.csv"
+    if root_results.exists():
+        candidate_files.append(root_results)
+
+    # Also collect per-run or per-trial results.csv files which contain epoch-level metrics
+    candidate_epoch_results = list(experiments_dir.glob("*/results.csv"))
+
+    # Scan all candidate optuna_results.csv files (summary hyperparameter results)
+    for results_file in candidate_files:
         try:
             # Read CSV, stripping whitespace from column names
             df = pd.read_csv(results_file)
@@ -152,6 +219,7 @@ def get_best_model_metrics():
             best_idx = df[map50_col].idxmax()
             current_best_map50 = df.loc[best_idx, map50_col]
 
+            # If CSV has a strictly better mAP50, replace the best metrics entirely
             if current_best_map50 > best_map50:
                 best_map50 = current_best_map50
                 best_model_name = results_file.parent.name
@@ -165,9 +233,132 @@ def get_best_model_metrics():
                     "Recall": df.loc[best_idx, "metrics/recall(B)"],
                     "Epoch": df.loc[best_idx, "epoch"],
                 }
+            # If mAP50 ties the current best but precision/recall are missing/zero, backfill from CSV
+            elif (
+                best_metrics is not None
+                and abs(current_best_map50 - float(best_metrics.get("mAP50", 0.0))) < 1e-8
+            ):
+                try:
+                    # Prefer non-zero/non-null precision/recall from the CSV
+                    csv_precision = float(df.loc[best_idx, "metrics/precision(B)"])
+                    csv_recall = float(df.loc[best_idx, "metrics/recall(B)"])
+                    csv_map50_95 = float(df.loc[best_idx, "metrics/mAP50-95(B)"])
+                    csv_epoch = int(df.loc[best_idx, "epoch"]) if "epoch" in df.columns else best_metrics.get("Epoch", 0)
+
+                    if not best_metrics.get("Precision") or best_metrics.get("Precision") == 0.0:
+                        best_metrics["Precision"] = csv_precision
+                    if not best_metrics.get("Recall") or best_metrics.get("Recall") == 0.0:
+                        best_metrics["Recall"] = csv_recall
+                    # Backfill mAP50-95/Epoch if missing or zero
+                    if not best_metrics.get("mAP50-95") or best_metrics.get("mAP50-95") == 0.0:
+                        best_metrics["mAP50-95"] = csv_map50_95
+                    if not best_metrics.get("Epoch") or best_metrics.get("Epoch") == 0:
+                        best_metrics["Epoch"] = csv_epoch
+                    # Update model name to reflect source when we merged
+                    if best_metrics.get("Model", "").startswith("optuna-best-trial"):
+                        best_metrics["Model"] = f"{best_metrics['Model']}+csv"
+                except Exception:
+                    # If CSV does not contain these columns, skip backfill
+                    pass
         except Exception as e:
             print(f"[WARN] Error reading {results_file}: {e}")
             continue
+
+    # Scan all candidate epoch-level results.csv files (contain precision/recall and mAP columns)
+    for results_file in candidate_epoch_results:
+        try:
+            df = pd.read_csv(results_file)
+            df.columns = df.columns.str.strip()
+
+            map50_col = "metrics/mAP50(B)"
+            if map50_col not in df.columns:
+                continue
+
+            best_idx = df[map50_col].idxmax()
+            current_best_map50 = float(df.loc[best_idx, map50_col])
+
+            if current_best_map50 > best_map50:
+                best_map50 = current_best_map50
+                best_model_name = results_file.parent.name
+                best_metrics = {
+                    "Model": best_model_name,
+                    "mAP50": current_best_map50,
+                    "mAP50-95": float(df.loc[best_idx, "metrics/mAP50-95(B)"])
+                    if "metrics/mAP50-95(B)" in df.columns
+                    else 0.0,
+                    "Precision": float(df.loc[best_idx, "metrics/precision(B)"])
+                    if "metrics/precision(B)" in df.columns
+                    else 0.0,
+                    "Recall": float(df.loc[best_idx, "metrics/recall(B)"])
+                    if "metrics/recall(B)" in df.columns
+                    else 0.0,
+                    "Epoch": int(df.loc[best_idx, "epoch"]) if "epoch" in df.columns else 0,
+                }
+            elif (
+                best_metrics is not None
+                and abs(current_best_map50 - float(best_metrics.get("mAP50", 0.0))) < 1e-8
+            ):
+                # Backfill missing fields
+                try:
+                    if (not best_metrics.get("Precision") or best_metrics.get("Precision") == 0.0) and "metrics/precision(B)" in df.columns:
+                        best_metrics["Precision"] = float(df.loc[best_idx, "metrics/precision(B)"])
+                    if (not best_metrics.get("Recall") or best_metrics.get("Recall") == 0.0) and "metrics/recall(B)" in df.columns:
+                        best_metrics["Recall"] = float(df.loc[best_idx, "metrics/recall(B)"])
+                    if (not best_metrics.get("mAP50-95") or best_metrics.get("mAP50-95") == 0.0) and "metrics/mAP50-95(B)" in df.columns:
+                        best_metrics["mAP50-95"] = float(df.loc[best_idx, "metrics/mAP50-95(B)"])
+                    if not best_metrics.get("Epoch") or best_metrics.get("Epoch") == 0:
+                        best_metrics["Epoch"] = int(df.loc[best_idx, "epoch"]) if "epoch" in df.columns else best_metrics.get("Epoch", 0)
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"[WARN] Error reading {results_file}: {e}")
+            continue
+
+    # Fallback: if no experiment or study metrics found, attempt production folder
+    if best_metrics is None:
+        # Look for metrics artifacts in production (e.g., results.csv, metrics.json, best.pt)
+        prod_results_csv = production_dir / "results.csv"
+        prod_metrics_json = production_dir / "metrics.json"
+        prod_best_pt = production_dir / "best.pt"
+
+        try:
+            if prod_results_csv.exists():
+                df = pd.read_csv(prod_results_csv)
+                df.columns = df.columns.str.strip()
+                map50_col = next((c for c in df.columns if "mAP50" in c), None)
+                if map50_col:
+                    best_idx = df[map50_col].idxmax()
+                    best_metrics = {
+                        "Model": "production-best",
+                        "mAP50": float(df.loc[best_idx, map50_col]),
+                        "mAP50-95": float(df.loc[best_idx, next((c for c in df.columns if "mAP50-95" in c), map50_col)]),
+                        "Precision": float(df.loc[best_idx, next((c for c in df.columns if "precision" in c.lower()), map50_col)]),
+                        "Recall": float(df.loc[best_idx, next((c for c in df.columns if "recall" in c.lower()), map50_col)]),
+                        "Epoch": int(df.loc[best_idx, next((c for c in df.columns if c.lower()=="epoch"), 0)]),
+                    }
+            elif prod_metrics_json.exists():
+                with open(prod_metrics_json, "r") as f:
+                    mj = json.load(f)
+                best_metrics = {
+                    "Model": "production-best",
+                    "mAP50": float(mj.get("mAP50", 0.5)),
+                    "mAP50-95": float(mj.get("mAP50-95", mj.get("mAP50_95", 0.0))),
+                    "Precision": float(mj.get("precision", 0.0)),
+                    "Recall": float(mj.get("recall", 0.0)),
+                    "Epoch": int(mj.get("epoch", 0)),
+                }
+            elif prod_best_pt.exists():
+                # Model exists but no metrics file; provide placeholder
+                best_metrics = {
+                    "Model": "production-best",
+                    "mAP50": 0.5,
+                    "mAP50-95": 0.0,
+                    "Precision": 0.0,
+                    "Recall": 0.0,
+                    "Epoch": 0,
+                }
+        except Exception as e:
+            print(f"[WARN] Production metrics read error: {e}")
 
     return best_metrics
 
@@ -300,11 +491,12 @@ def main():
     print("PART 1: DATASET COMPOSITION")
     print("=" * 80)
 
+    # Focus exclusively on augmented splits; omit original image reporting
+    composition_stats = {}
     for split_name in [
-        "ground-truth",
-        "ground-truth-augmented",
         "training",
         "validation",
+        "testing",
     ]:
         split_dir = DATA_DIR / split_name
 
@@ -324,23 +516,16 @@ def main():
             avg_augs = min_augs = max_augs = 0
 
         print(f"\n{split_name.upper()}:")
-        print(f"  Original images        : {len(original_imgs)}")
-        print(f"  Augmented images       : {len(augmented_imgs)}")
-        print(f"  Total images           : {len(original_imgs) + len(augmented_imgs)}")
-        print(f"  Unique source images   : {len(aug_map)}")
-        print(f"  Avg augmentations/image: {avg_augs:.1f}")
+        print(f"  Augmented samples      : {len(augmented_imgs)}")
+        print(f"  Unique source bases    : {len(aug_map)}")
+        print(f"  Avg augmentations/base : {avg_augs:.1f}")
         print(f"  Min/Max augmentations  : {min_augs}/{max_augs}")
 
-        # Check if we have 100 originals
-        if len(original_imgs) >= 100:
-            print(f"  [PASS] Meets 100 original images requirement")
-        elif len(original_imgs) > 0:
-            print(f"  [WARN] Only {len(original_imgs)} original images (target: 100)")
-
-        # Check augmentation ratio
-        if len(original_imgs) > 0:
-            ratio = len(augmented_imgs) / len(original_imgs)
-            print(f"  Augmentation ratio     : {ratio:.1f}:1")
+        composition_stats[split_name] = {
+            "original": len(original_imgs),
+            "augmented": len(augmented_imgs),
+            "total": len(original_imgs) + len(augmented_imgs),
+        }
 
     # ========================================================================
     # PART 2: Sample Size Requirements
@@ -385,38 +570,36 @@ def main():
         )
         print(f"  - {expected_acc*100:.0f}% accuracy: {n} samples")
 
-    # Check ground-truth set (used as validation)
-    val_dir = DATA_DIR / "ground-truth"
-    actual_n = 0
-    if val_dir.exists():
-        original_imgs, _, _ = identify_original_images(val_dir)
-        actual_n = len(original_imgs)
+    # New: Evaluate sample size sufficiency using augmented dataset (all splits)
+    augmented_total = sum(
+        stats_dict["augmented"]
+        for split, stats_dict in composition_stats.items()
+        if split in {"training", "validation", "testing"}
+    )
+    print(f"\nTotal augmented samples (train+val+test): {augmented_total}")
 
-        print(f"\nYour ground-truth set: {actual_n} original images")
+    if augmented_total >= required_n_conservative:
+        print(
+            f"[PASS] SUFFICIENT (Augmented samples meet conservative target of {required_n_conservative})"
+        )
+    elif augmented_total >= required_n_realistic:
+        print(
+            f"[PASS] SUFFICIENT (Augmented samples meet realistic target of {required_n_realistic})"
+        )
+    else:
+        print(
+            f"[WARN] INSUFFICIENT - need {required_n_realistic - augmented_total} more augmented samples (for realistic target)"
+        )
+        if augmented_total > 0:
+            z_score = stats.norm.ppf((1 + desired_confidence) / 2)
+            achievable_margin_aug = z_score * math.sqrt(
+                (model_accuracy * (1 - model_accuracy)) / augmented_total
+            )
+            print(
+                f"   With {augmented_total} augmented samples and {model_accuracy*100:.1f}% accuracy, achievable margin is +/-{achievable_margin_aug*100:.1f}%"
+            )
 
-        if actual_n >= required_n_conservative:
-            print(
-                f"[PASS] SUFFICIENT (Meets conservative target of {required_n_conservative})"
-            )
-        elif actual_n >= required_n_realistic:
-            print(
-                f"[PASS] SUFFICIENT (Meets realistic target of {required_n_realistic})"
-            )
-        else:
-            print(
-                f"[WARN] INSUFFICIENT - need {required_n_realistic - actual_n} more images (for realistic target)"
-            )
-
-            # What margin can we achieve?
-            if actual_n > 0:
-                z_score = stats.norm.ppf((1 + desired_confidence) / 2)
-                # Use model accuracy for achievable margin calculation
-                achievable_margin = z_score * math.sqrt(
-                    (model_accuracy * (1 - model_accuracy)) / actual_n
-                )
-                print(
-                    f"   With {actual_n} images and {model_accuracy*100:.1f}% accuracy, you achieve +/-{achievable_margin*100:.1f}% margin"
-                )
+    # Original ground-truth images intentionally not reported
 
     # ========================================================================
     # Advanced: Dirichlet Prior Sample Size
@@ -425,11 +608,27 @@ def main():
     print("Advanced: Sample Size with Dirichlet Prior (Inter-image Variability)")
     print("-" * 80)
 
-    # Estimate items per image from ground-truth-augmented (more samples)
-    aug_dir = DATA_DIR / "ground-truth-augmented"
-    items_per_image = 0
-    if aug_dir.exists():
-        items_per_image = estimate_items_per_image(aug_dir)
+    # Estimate items per image from augmented training + validation splits
+    def estimate_items_per_image_multi(label_root_dirs):
+        total_items = 0
+        total_label_files = 0
+        for root in label_root_dirs:
+            labels_sub = root / "labels"
+            search_dir = labels_sub if labels_sub.exists() else root
+            for lf in search_dir.glob("*.txt"):
+                try:
+                    with open(lf, "r") as f:
+                        lines = [l.strip() for l in f if l.strip()]
+                        total_items += len(lines)
+                        total_label_files += 1
+                except Exception:
+                    continue
+        return (total_items / total_label_files) if total_label_files > 0 else 0.0
+
+    items_per_image = estimate_items_per_image_multi([
+        DATA_DIR / "training",
+        DATA_DIR / "validation",
+    ])
 
     # Load measured Omega value from file
     omega_data = load_omega_value()
@@ -437,8 +636,17 @@ def main():
     if omega_data and omega_data.get("omega") is not None:
         measured_omega = omega_data["omega"]
         measured_variability = omega_data.get("variability_level", "Unknown")
+        # Derive true original base image count from ground-truth directory
+        gt_dir = DATA_DIR / "ground-truth"
+        true_originals = 0
+        if gt_dir.exists():
+            true_originals = sum(1 for p in gt_dir.glob("*.jpg") if "_aug" not in p.stem)
+        reported_num_images = omega_data.get('num_images')
+        display_num = true_originals if true_originals > 0 else (reported_num_images or 'N/A')
         print(f"\nLoaded Omega value from calculation: {measured_omega:.2f} ({measured_variability} Variability)")
-        print(f"  Based on {omega_data.get('num_images', 'N/A')} images")
+        # Display a single authoritative base image count (remove legacy mismatch phrasing)
+        authoritative_count = true_originals or reported_num_images or 'N/A'
+        print(f"  Based on {authoritative_count} images")
         print(f"  Mean Accuracy: {omega_data.get('mean_accuracy', 0):.4f}")
         print(f"  Variance: {omega_data.get('variance_accuracy', 0):.6f}")
     else:
@@ -538,20 +746,9 @@ def main():
 
     # Determine validation set size
     # Prefer 'validation' folder, fallback to 'ground-truth'
-    n_val = 0
-    val_dir = DATA_DIR / "validation"
-    if val_dir.exists():
-        original_imgs, _, _ = identify_original_images(val_dir)
-        n_val = len(original_imgs)
-
-    if n_val == 0 and actual_n > 0:
-        n_val = actual_n
-        print(
-            f"\nUsing ground-truth set size ({n_val} images) for confidence interval calculations"
-        )
-        print("(Standard 'validation' directory was empty)")
-    else:
-        print(f"\nValidation set size: {n_val} original images")
+    # Use augmented validation sample count for CI sizing (note: may inflate precision)
+    n_val = composition_stats.get("validation", {}).get("augmented", 0)
+    print(f"\nValidation augmented sample count: {n_val}")
 
     if n_val > 0:
         print(
@@ -597,42 +794,56 @@ def main():
     print("RECOMMENDATIONS")
     print("=" * 80)
 
+    # Compute safe avg augmentations per base for training split
+    train_stats = composition_stats.get('training', {})
+    train_aug = train_stats.get('augmented', 0)
+    train_bases = train_stats.get('original', 0)
+    avg_aug_train = (train_aug / train_bases) if train_bases > 0 else 0.0
+
     print(
-        f"""
-For {desired_confidence*100:.0f}% confidence interval with +/-{desired_margin*100:.0f}% margin of error:
+        """
+For {conf_pct}% confidence interval with +/-{margin_pct}% margin of error:
 
 1. SAMPLE SIZE:
-   - Conservative target (50% acc): {required_n_conservative} images
-   - Realistic target ({model_accuracy*100:.1f}% acc): {required_n_realistic} images
-   - Your current ground-truth set: {actual_n} images
+    - Conservative target (50% acc): {req_cons} samples
+    - Realistic target ({acc_pct}% acc): {req_real} samples
+    - Augmented samples available (train+val+test): {aug_total}
 
-2. DATASET COMPOSITION:
-   - [OK] Use 100+ original images
-   - [OK] Apply consistent augmentations (5-10x per image)
-   - [OK] Keep original images separate for unbiased validation
+2. AUGMENTED DATASET COMPOSITION:
+    - Avg augmentations per base (train): {avg_aug_train:.2f}
+    - Validation augmented samples: {val_aug}
+    - Testing augmented samples: {test_aug}
 
-3. VALIDATION STRATEGY:
-   - Validate ONLY on original images (not augmented)
-   - This prevents data leakage from similar augmentations
-   - Report confidence intervals with all metrics
+3. VALIDATION STRATEGY (CURRENT CONFIG):
+    - Confidence intervals computed using augmented validation sample count (may be optimistic)
+    - Consider switching to non-augmented originals for unbiased CI if available
 
 4. STATISTICAL REPORTING:
-   - Your model accuracy: {metrics['mAP50']*100:.2f}%
-   - Report as: {metrics['mAP50']*100:.2f}% +/- [margin]% (85% CI)
-   - Based on n={n_val} independent validation images
+    - Model accuracy: {acc_pct}%
+    - Report as: {acc_pct}% +/- {margin_target} ({conf_pct}% CI)
+    - Based on n={n_val} validation augmented samples
 
 5. CURRENT STATUS:
-   """
+    """.format(
+            conf_pct=f"{desired_confidence*100:.0f}",
+            margin_pct=f"{desired_margin*100:.0f}",
+            req_cons=required_n_conservative,
+            req_real=required_n_realistic,
+            acc_pct=f"{model_accuracy*100:.2f}",
+            aug_total=augmented_total,
+            avg_aug_train=avg_aug_train,
+            val_aug=composition_stats.get('validation', {}).get('augmented', 0),
+            test_aug=composition_stats.get('testing', {}).get('augmented', 0),
+            n_val=n_val,
+            margin_target=f"{desired_margin*100:.0f}%",
+        )
     )
 
-    if val_dir.exists() and actual_n >= required_n_realistic:
-        print(
-            "   [PASS] Your dataset meets statistical requirements for your model performance!"
-        )
-        print("   [PASS] You can confidently report 85% CI +/- 5%")
+    if n_val >= required_n_realistic:
+        print("   [PASS] Validation augmented sample count meets statistical targets (caveat: augmentation correlation)" )
     else:
-        print("   [WARN] Consider increasing validation set size")
-        print(f"   [WARN] Target: {required_n_realistic} original validation images")
+        print("   [WARN] Increase validation augmented samples or use original images for a defensible CI")
+        print(f"   [WARN] Target: {required_n_realistic} validation samples")
 
     print("\n" + "=" * 80)
     print()

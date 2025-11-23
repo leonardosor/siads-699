@@ -13,7 +13,8 @@ SCRIPT_PATH = Path(__file__).resolve()
 REPO_ROOT = SCRIPT_PATH.parent.parent
 sys.path.append(str(REPO_ROOT))
 
-DATA_DIR = REPO_ROOT / "data" / "input" / "ground-truth-augmented"
+# Use ground-truth directory which contains all 165 original images
+DATA_DIR = REPO_ROOT / "data" / "input" / "ground-truth"
 MODEL_PATH = REPO_ROOT / "models" / "production" / "best.pt"
 OMEGA_OUTPUT_FILE = REPO_ROOT / "data" / "output" / "omega_value.json"
 
