@@ -8,11 +8,11 @@ Modes:
   parquet     - Extract dataset from parquet files
 
 Examples:
-  # Simple split
-  python prepare_dataset.py groundtruth
+    # Simple split (defaults: train 0.7 / val 0.15 / test 0.15)
+    python prepare_dataset.py groundtruth
 
-  # With augmentation (recommended)
-  python prepare_dataset.py augmented --augmentations-per-image 50
+    # Augmented (default 10 augmentations per image; increase for larger dataset)
+    python prepare_dataset.py augmented --augmentations-per-image 50
 
   # From parquet files
   python prepare_dataset.py parquet --raw-dir data/raw
@@ -137,9 +137,9 @@ def save_split(
 def prepare_groundtruth(
     ground_truth_dir: Path,
     output_dir: Path,
-    train_ratio: float = 0.8,
-    val_ratio: float = 0.15,
-    test_ratio: float = 0.05,
+    train_ratio: float = 0.7,  # aligned with CLI default
+    val_ratio: float = 0.15,  # aligned with CLI default
+    test_ratio: float = 0.15,  # aligned with CLI default
     backup_existing: bool = False,
     seed: int = 42,
 ) -> None:
@@ -292,10 +292,10 @@ def apply_random_augmentation(
 def prepare_augmented(
     ground_truth_dir: Path,
     output_dir: Path,
-    augmentations_per_image: int = 50,
-    train_ratio: float = 0.7,
-    val_ratio: float = 0.15,
-    test_ratio: float = 0.15,
+    augmentations_per_image: int = 10,  # aligned with CLI default
+    train_ratio: float = 0.7,  # aligned with CLI default
+    val_ratio: float = 0.15,  # aligned with CLI default
+    test_ratio: float = 0.15,  # aligned with CLI default
     keep_originals: bool = True,
     backup_existing: bool = False,
     seed: int = 42,
