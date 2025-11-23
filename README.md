@@ -145,11 +145,6 @@ Local development environment:
 Great Lakes HPC environment:
 - **great-lakes-env.yml** - Full conda environment with GPU support
 
-Key differences from Docker:
-- Full PyTorch
-- Includes pycocotools
-- GPU-enabled packages
-
 ## Workflow Overview
 
 ### 1. Data Preparation
