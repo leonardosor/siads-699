@@ -30,6 +30,20 @@ src/
 └── config/             # Configuration files
 ```
 
+### Product Architecture - Logical
+![Logical](/docs/imgs/architecture_0.png)
+
+### Product Architecture - Physical
+![Physical](/docs/imgs/architecture_1.png)
+
+### Dockerized Development
+- All container build assets live in `src/docker/` (`Dockerfile`, `compose.yml`, dependency lock, and helper scripts).
+- `src/docker/compose.yml` builds the Streamlit image, mounts `./models` and `./src`, and provisions PostgreSQL with `src/scripts/init-db.sql`.
+- Default credentials/ports are injected via environment variables (`APP_PORT`, `DB_PORT`, `POSTGRES_*`, `MODEL_PATH`). Override them inline or inject a `.env`.
+- Ensure your YOLO weights live at `models/best.pt` (or point `MODEL_PATH` elsewhere).
+- For local installs outside Docker run `pip install -r src/docker/requirements.txt`; Conda users can apply `src/env/environment.yml`.
+
+
 ## Quick Start
 
 ### Local Development with Docker
