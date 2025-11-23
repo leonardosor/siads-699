@@ -2,72 +2,7 @@
 
 This directory contains scripts and configurations for training YOLOv8 models on financial document datasets.
 
-## Files
-
-- **train.py** - Production training script with full CLI argument support
-- **batch_job.sh** - SLURM batch job for Great Lakes HPC cluster
-- **finance-image-parser.yaml** - Dataset configuration for YOLOv8
-
-## Quick Start
-
-### Local Training (CPU/GPU)
-
-```bash
-# Basic training
-python src/training/train.py \
-  --weights models/pretrained/yolov8n.pt \
-  --data-config src/training/finance-image-parser.yaml \
-  --epochs 50 \
-  --batch 8 \
-  --imgsz 640 \
-  --project models/runs \
-  --name my-experiment
-
-# With GPU
-python src/training/train.py \
-  --weights models/pretrained/yolov8n.pt \
-  --data-config src/training/finance-image-parser.yaml \
-  --epochs 150 \
-  --batch 16 \
-  --imgsz 1024 \
-  --device 0 \
-  --project models/runs \
-  --name finance-high-res
-```
-
-### Great Lakes HPC Training
-
-```bash
-# Default configuration (150 epochs, batch=4, imgsz=1024)
-sbatch src/training/batch_job.sh
-
-# Custom configuration
-EPOCHS=200 BATCH=8 IMGSZ=640 sbatch src/training/batch_job.sh
-
-# With custom run name
-RUN_NAME=my-custom-run sbatch src/training/batch_job.sh
-```
-
-## Training Script Arguments
-
-### Required Arguments
-- `--weights` - Path to pretrained weights (e.g., models/pretrained/yolov8n.pt)
-- `--data-config` - Path to dataset YAML (e.g., src/training/finance-image-parser.yaml)
-
-### Common Arguments
-- `--epochs` - Number of training epochs (default: 100)
-- `--batch` - Batch size (default: 16)
-- `--imgsz` - Input image size (default: 640)
-- `--device` - Device to use (cpu, 0, 0,1,2,3) (default: 0 if GPU available)
-- `--project` - Output directory for runs (default: models/runs)
-- `--name` - Name of this training run (default: auto-generated)
-
-### Advanced Arguments
-- `--lr0` - Initial learning rate (default: 0.01)
-- `--lrf` - Final learning rate factor (default: 0.01)
-# Model Training
-
-This directory contains scripts and configurations for training YOLOv8 models on financial document datasets.
+For quickstart training instructions, see the [quick start guide](../../docs/README.md#training-on-great-lakes). For general project information, see the [main README](../../README.md).
 
 ## Files
 

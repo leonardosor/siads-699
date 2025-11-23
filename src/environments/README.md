@@ -2,6 +2,8 @@
 
 This directory contains environment configurations for different deployment targets.
 
+For quickstart instructions, see the [main README](../../README.md) or [quick start guide](../../docs/README.md).
+
 ## Requirements Files
 
 The project uses a **hierarchical requirements structure** to avoid duplication:

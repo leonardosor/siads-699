@@ -21,7 +21,6 @@ import yaml
 from PIL import Image
 from ultralytics import YOLO
 
-# Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from utils.common import find_repo_root
 
@@ -35,14 +34,13 @@ try:
     def patched_torch_safe_load(weight):
         """Patched version that uses weights_only=False for YOLOv8 compatibility."""
         file = weight
-        # Check if file exists, if not let original function handle it (will download)
         if isinstance(file, (str, Path)) and not Path(file).exists():
             return original_torch_safe_load(weight)
         return torch.load(file, map_location="cpu", weights_only=False), file
 
     tasks_module.torch_safe_load = patched_torch_safe_load
 except (ImportError, AttributeError):
-    pass  # Older PyTorch/Ultralytics versions
+    pass
 
 
 REPO_ROOT = find_repo_root()
@@ -154,7 +152,6 @@ def load_dataset_splits(config_path: Path) -> Dict[str, Path]:
 
 
 def clean_corrupt_images(image_dirs: Iterable[Path]) -> None:
-    """Remove corrupt/unreadable images from dataset directories."""
     exts = {".jpg", ".jpeg", ".png", ".bmp"}
     removed = 0
     for img_dir in image_dirs:
@@ -181,7 +178,6 @@ def clean_corrupt_images(image_dirs: Iterable[Path]) -> None:
 
 
 def clear_gpu_memory() -> None:
-    """Clear GPU memory cache to prevent memory leaks and CUDA errors."""
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
         torch.cuda.synchronize()
@@ -189,7 +185,6 @@ def clear_gpu_memory() -> None:
 
 
 def validate_dataset(splits: Dict[str, Path], verbose: bool = True) -> int:
-    """Validate dataset splits and count images before training."""
     total_images = 0
     if verbose:
         print("=" * 70)
@@ -198,7 +193,6 @@ def validate_dataset(splits: Dict[str, Path], verbose: bool = True) -> int:
 
     for split_name, split_path in sorted(splits.items()):
         if split_path and split_path.exists():
-            # Check both split_path directly and split_path/images subdirectory
             image_dirs = [split_path, split_path / "images"]
             image_count = 0
 
@@ -233,10 +227,7 @@ def create_objective(
     epochs: int,
     cache: bool,
 ) -> Any:
-    """Create Optuna objective function for hyperparameter tuning."""
-
     def objective(trial: optuna.Trial) -> float:
-        # Sample hyperparameters
         lr0 = trial.suggest_float("lr0", 1e-4, 1e-2, log=True)
         lrf = trial.suggest_float("lrf", 1e-5, 1e-2, log=True)
         momentum = trial.suggest_float("momentum", 0.8, 0.99)
@@ -244,7 +235,6 @@ def create_objective(
         batch = trial.suggest_categorical("batch", [8, 16, 32])
         optimizer = trial.suggest_categorical("optimizer", ["SGD", "Adam", "AdamW"])
 
-        # Augmentation params
         mosaic = trial.suggest_float("mosaic", 0.5, 1.0)
         fliplr = trial.suggest_float("fliplr", 0.0, 0.7)
         degrees = trial.suggest_float("degrees", 0.0, 20.0)
@@ -254,10 +244,8 @@ def create_objective(
         mixup = trial.suggest_float("mixup", 0.0, 0.3)
 
         try:
-            # Clear GPU memory before starting
             clear_gpu_memory()
 
-            # Train model
             model = YOLO(str(weights_path))
             results = model.train(
                 data=str(data_config_path),
@@ -285,10 +273,8 @@ def create_objective(
                 plots=False,
             )
 
-            # Get validation mAP50-95 as objective
             map_value = float(results.results_dict.get("metrics/mAP50-95(B)", 0.0))
 
-            # Clear GPU memory after training
             del model
             del results
             clear_gpu_memory()
@@ -296,35 +282,26 @@ def create_objective(
             return map_value
 
         except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
-            # Handle CUDA errors gracefully
             error_msg = str(e)
             print(f"\nTrial {trial.number} failed with parameters: {trial.params}")
             print(f"Error: {error_msg}\n")
 
-            # Clear GPU memory after error
             clear_gpu_memory()
 
-            # Store error info in trial user attributes
             trial.set_user_attr("error", error_msg)
             trial.set_user_attr("error_type", type(e).__name__)
 
-            # Raise the exception to mark trial as failed
-            # Optuna will catch it and continue with next trial
             raise
 
         except Exception as e:
-            # Handle other unexpected errors
             error_msg = str(e)
             print(f"\nTrial {trial.number} failed with unexpected error: {error_msg}\n")
 
-            # Clear GPU memory after error
             clear_gpu_memory()
 
-            # Store error info
             trial.set_user_attr("error", error_msg)
             trial.set_user_attr("error_type", type(e).__name__)
 
-            # Raise the exception
             raise
 
     return objective
@@ -341,9 +318,6 @@ def train_with_params(
     params: Optional[Dict[str, Any]] = None,
     batch_override: Optional[int] = None,
 ) -> Path:
-    """Train model with given or default parameters."""
-
-    # Default params if not provided
     if params is None:
         params = {
             "lr0": 0.001,
@@ -369,7 +343,6 @@ def train_with_params(
         print(f"  {k:15s}: {v}")
     print("=" * 70 + "\n")
 
-    # Train model
     model = YOLO(str(weights_path))
     results = model.train(
         data=str(data_config_path),
@@ -403,18 +376,15 @@ def train_with_params(
 def main() -> None:
     args = parse_args()
 
-    # Resolve paths
     weights_path = resolve_path(args.weights)
     data_config_path = resolve_path(args.data_config)
     project_dir = MODELS_DIR / "experiments" / "active"
 
-    # Validate paths
     if not data_config_path.exists():
         raise FileNotFoundError(f"Dataset config not found: {data_config_path}")
     if not weights_path.exists():
         raise FileNotFoundError(f"Weights file not found: {weights_path}")
 
-    # Load and validate dataset
     splits = load_dataset_splits(data_config_path)
     validate_dataset(splits)
 
@@ -425,7 +395,6 @@ def main() -> None:
     project_dir.mkdir(parents=True, exist_ok=True)
 
     if args.optimize:
-        # Run Optuna optimization
         print("\n" + "=" * 70)
         print(f"OPTUNA HYPERPARAMETER OPTIMIZATION ({args.n_trials} trials)")
         print("=" * 70 + "\n")
@@ -446,19 +415,17 @@ def main() -> None:
             args.cache,
         )
 
-        # Optimize with exception catching to continue after CUDA errors
         study.optimize(
             objective,
             n_trials=args.n_trials,
-            catch=(Exception,),  # Catch all exceptions and continue with next trial
-            gc_after_trial=True,  # Run garbage collection after each trial
+            catch=(Exception,),
+            gc_after_trial=True,
         )
 
         print("\n" + "=" * 70)
         print("OPTIMIZATION COMPLETE")
         print("=" * 70)
 
-        # Check if we have any completed trials
         completed_trials = [
             t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE
         ]
@@ -484,7 +451,6 @@ def main() -> None:
             print(f"  {k:15s}: {v}")
         print("=" * 70 + "\n")
 
-        # Train final model with best params
         run_name = args.name or datetime.now().strftime("finance-parser-%Y%m%d_%H%M%S")
         save_dir = train_with_params(
             weights_path,
@@ -497,7 +463,6 @@ def main() -> None:
             study.best_params,
         )
     else:
-        # Standard training
         run_name = args.name or datetime.now().strftime("finance-parser-%Y%m%d_%H%M%S")
         save_dir = train_with_params(
             weights_path,
@@ -510,7 +475,6 @@ def main() -> None:
             batch_override=args.batch,
         )
 
-    # Print results
     best_pt = save_dir / "weights" / "best.pt"
     print("\n" + "=" * 70)
     print("TRAINING COMPLETE")

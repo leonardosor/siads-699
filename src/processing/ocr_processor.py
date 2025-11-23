@@ -1,8 +1,3 @@
-"""
-OCR Processor using Ultralytics YOLO and Tesseract
-Processes images from parquet files and extracts text using multiple OCR methods
-"""
-
 import io
 import json
 import os
@@ -22,14 +17,11 @@ from sqlalchemy import create_engine, text
 from tqdm import tqdm
 from ultralytics import YOLO
 
-# Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from utils.ocr_enhancement import OCREnhancer
 
 
 class OCRProcessor:
-    """Process images from parquet files using Ultralytics models and Tesseract"""
-
     def __init__(
         self,
         parquet_dir="/workspace/data/raw",
@@ -40,18 +32,6 @@ class OCRProcessor:
         database_url=None,
         enhanced_ocr=True,
     ):
-        """
-        Initialize OCR Processor
-
-        Args:
-            parquet_dir: Directory containing parquet files
-            output_dir: Directory to save OCR results
-            use_yolo_ocr: Whether to use YOLO for text detection
-            use_tesseract: Whether to use Tesseract for OCR
-            save_to_db: Whether to save results to PostgreSQL database
-            database_url: Database connection URL (defaults to env var)
-            enhanced_ocr: Whether to use enhanced OCR with preprocessing (slower but more accurate)
-        """
         self.parquet_dir = Path(parquet_dir)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -68,11 +48,9 @@ class OCRProcessor:
         if self.use_yolo_ocr:
             self._initialize_yolo()
 
-        # Initialize OCR enhancer if using enhanced mode
         self.ocr_enhancer = OCREnhancer() if enhanced_ocr else None
 
     def _initialize_database(self, database_url):
-        """Initialize database connection"""
         try:
             db_url = database_url or os.getenv(
                 "DATABASE_URL", "postgresql://postgres:123@db:5432/postgres"
@@ -95,7 +73,6 @@ class OCRProcessor:
             self.db_engine = None
 
     def _initialize_yolo(self):
-        """Initialize YOLO model for text detection/recognition"""
         try:
             print("Loading YOLO model for text detection...")
             self.yolo_model = YOLO("yolov8n.pt")
@@ -114,15 +91,6 @@ class OCRProcessor:
             self.yolo_device = "cpu"
 
     def _extract_image_from_row(self, image_data):
-        """
-        Extract PIL Image from parquet row data
-
-        Args:
-            image_data: Image data from parquet (dict or bytes)
-
-        Returns:
-            PIL.Image object
-        """
         if isinstance(image_data, dict):
             image_bytes = image_data.get("bytes")
         else:
@@ -131,15 +99,6 @@ class OCRProcessor:
         return Image.open(io.BytesIO(image_bytes))
 
     def _yolo_detect_text_regions(self, image):
-        """
-        Use YOLO to detect text regions in image
-
-        Args:
-            image: PIL Image
-
-        Returns:
-            List of detected text regions (bounding boxes)
-        """
         if not self.yolo_model:
             return []
 
@@ -148,7 +107,6 @@ class OCRProcessor:
                 image = image.convert("RGB")
 
             img_array = np.array(image)
-            # Use the device that was detected during initialization (cpu or cuda)
             device = getattr(self, "yolo_device", "cpu")
             results = self.yolo_model(img_array, conf=0.25, device=device)
 
@@ -174,26 +132,15 @@ class OCRProcessor:
             return []
 
     def _tesseract_ocr(self, image):
-        """
-        Use Tesseract to extract text from image
-
-        Args:
-            image: PIL Image
-
-        Returns:
-            Dictionary with OCR results
-        """
         try:
             if image.mode not in ["RGB", "L", "RGBA"]:
                 image = image.convert("RGB")
 
             if self.enhanced_ocr and self.ocr_enhancer:
-                # Use enhanced OCR with preprocessing
                 result = self.ocr_enhancer.extract_text_enhanced(
                     image, bbox=None, use_multi_method=True, padding=15
                 )
 
-                # Get word-level data using the best preprocessing method
                 best_method = result.get("method", "adaptive")
                 processed = self.ocr_enhancer.preprocess_image(
                     image, method=best_method
@@ -230,7 +177,6 @@ class OCRProcessor:
                     "psm_mode": result.get("psm_mode", ""),
                 }
             else:
-                # Original fast method
                 data = pytesseract.image_to_data(
                     image, output_type=pytesseract.Output.DICT
                 )
@@ -273,16 +219,6 @@ class OCRProcessor:
             }
 
     def process_image(self, image_data, label=None):
-        """
-        Process a single image with all available OCR methods
-
-        Args:
-            image_data: Image data from parquet
-            label: Original label from dataset
-
-        Returns:
-            Dictionary with OCR results
-        """
         start_time = time.time()
         result = {
             "label": label,
@@ -316,12 +252,6 @@ class OCRProcessor:
         return result
 
     def _save_to_database(self, results_list):
-        """
-        Save OCR results to PostgreSQL database
-
-        Args:
-            results_list: List of OCR result dictionaries
-        """
         if not self.save_to_db or not self.db_engine:
             return
 
@@ -369,7 +299,6 @@ class OCRProcessor:
             print(f"Error saving to database: {e}")
 
     def _insert_ocr_result(self, conn, result, engine_type):
-        """Insert main OCR result record"""
         try:
             ocr_id = str(uuid.uuid4())
 
@@ -435,7 +364,6 @@ class OCRProcessor:
             return None
 
     def _insert_ocr_words(self, conn, ocr_result_id, words):
-        """Insert word-level OCR details"""
         try:
             for i, word in enumerate(words):
                 sql = text(
@@ -469,7 +397,6 @@ class OCRProcessor:
             pass
 
     def _insert_yolo_regions(self, conn, ocr_result_id, regions):
-        """Insert YOLO detected regions"""
         try:
             for region in regions:
                 sql = text(
@@ -503,16 +430,6 @@ class OCRProcessor:
             pass
 
     def process_parquet_file(self, parquet_file, sample_size=None):
-        """
-        Process all images in a parquet file
-
-        Args:
-            parquet_file: Path to parquet file
-            sample_size: Optional number of images to process (None = all)
-
-        Returns:
-            List of OCR results
-        """
         print(f"\nProcessing: {parquet_file.name}")
 
         df = pd.read_parquet(parquet_file)
@@ -537,15 +454,6 @@ class OCRProcessor:
         return results
 
     def process_all_parquets(self, sample_size=None):
-        """
-        Process all parquet files in the directory
-
-        Args:
-            sample_size: Optional number of images to process per file
-
-        Returns:
-            DataFrame with all OCR results
-        """
         parquet_files = sorted(self.parquet_dir.glob("*.parquet"))
 
         if not parquet_files:
@@ -563,13 +471,6 @@ class OCRProcessor:
         return pd.DataFrame(all_results)
 
     def save_results(self, results_df, format="parquet"):
-        """
-        Save OCR results to file
-
-        Args:
-            results_df: DataFrame with OCR results
-            format: Output format ('parquet', 'json', 'csv')
-        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         if format == "parquet":
@@ -604,7 +505,6 @@ class OCRProcessor:
         return output_file
 
     def print_summary(self, results_df):
-        """Print summary statistics of OCR results"""
         print("\n" + "=" * 70)
         print("OCR Processing Summary")
         print("=" * 70)
@@ -649,7 +549,6 @@ class OCRProcessor:
 
 
 def main():
-    """Main execution function"""
     print("=" * 70)
     print("OCR Processor - Ultralytics + Tesseract + Database\n" + "=" * 70)
 
