@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from pathlib import Path
@@ -12,8 +13,9 @@ SCRIPT_PATH = Path(__file__).resolve()
 REPO_ROOT = SCRIPT_PATH.parent.parent
 sys.path.append(str(REPO_ROOT))
 
-DATA_DIR = REPO_ROOT / "data" / "input" / "ground-truth"
+DATA_DIR = REPO_ROOT / "data" / "input" / "ground-truth-augmented"
 MODEL_PATH = REPO_ROOT / "models" / "production" / "best.pt"
+OMEGA_OUTPUT_FILE = REPO_ROOT / "data" / "output" / "omega_value.json"
 
 
 def xywhn2xyxyn(x, w=640, h=640):
@@ -211,7 +213,21 @@ def main():
         )
         omega = float("inf")
 
-    print("\nUse this Omega value in the validate_ci.py script.")
+    # Save omega value to file for use in validate_ci.py
+    output_data = {
+        "omega": omega if omega != float("inf") else None,
+        "mean_accuracy": float(mean_acc),
+        "variance_accuracy": float(var_acc),
+        "num_images": len(f1_scores),
+        "variability_level": variability if omega != float("inf") else "Infinite",
+    }
+
+    OMEGA_OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(OMEGA_OUTPUT_FILE, "w") as f:
+        json.dump(output_data, f, indent=2)
+
+    print(f"\nOmega value saved to: {OMEGA_OUTPUT_FILE}")
+    print("The validate_ci.py script will now automatically use this value.")
 
 
 if __name__ == "__main__":
