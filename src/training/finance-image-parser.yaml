@@ -1,4 +1,4 @@
-path: /workspace/data/input
+path: /workspace/data/input/ground-truth
 train: training/images
 val: validation/images
 test: testing/images
