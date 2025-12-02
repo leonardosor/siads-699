@@ -5,7 +5,7 @@
 ultralytics==8.3.226
 opencv-python-headless==4.10.0.84
 
-# OCR & PDF Processing
+# OCR Processing
 pytesseract>=0.3.10
 pdf2image>=1.16.3
 PyPDF2>=3.0.1
