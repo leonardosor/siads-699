@@ -2,9 +2,10 @@
 Evaluate the pretrained YOLOv8n model on the testing set only.
 """
 
-from pathlib import Path
-from ultralytics import YOLO
 import json
+from pathlib import Path
+
+from ultralytics import YOLO
 
 # Define paths
 REPO_ROOT = Path(__file__).parent.parent
@@ -40,11 +41,7 @@ print("(This may take a few minutes depending on test set size)\n")
 
 # Validate on test split only
 results = model.val(
-    data=str(DATA_CONFIG),
-    split='test',
-    batch=16,
-    imgsz=640,
-    verbose=True
+    data=str(DATA_CONFIG), split="test", batch=16, imgsz=640, verbose=True
 )
 
 # Extract metrics
@@ -53,12 +50,12 @@ print("TEST SET RESULTS - PRETRAINED MODEL")
 print("=" * 80)
 
 metrics = {
-    'model': 'yolov8n.pt (pretrained)',
-    'dataset_split': 'test',
-    'mAP50': float(results.box.map50),
-    'mAP50-95': float(results.box.map),
-    'precision': float(results.box.mp),
-    'recall': float(results.box.mr)
+    "model": "yolov8n.pt (pretrained)",
+    "dataset_split": "test",
+    "mAP50": float(results.box.map50),
+    "mAP50-95": float(results.box.map),
+    "precision": float(results.box.mp),
+    "recall": float(results.box.mr),
 }
 
 print(f"\nPerformance Metrics:")
@@ -69,32 +66,32 @@ print(f"  Recall:    {metrics['recall']:.4f} ({metrics['recall']*100:.2f}%)")
 
 # Performance assessment
 print("\nPerformance Assessment:")
-if metrics['mAP50'] > 0.95:
+if metrics["mAP50"] > 0.95:
     print("  ⭐⭐⭐⭐⭐ EXCELLENT - Very high accuracy")
-elif metrics['mAP50'] > 0.90:
+elif metrics["mAP50"] > 0.90:
     print("  ⭐⭐⭐⭐ VERY GOOD - Strong performance")
-elif metrics['mAP50'] > 0.85:
+elif metrics["mAP50"] > 0.85:
     print("  ⭐⭐⭐ GOOD - Reliable performance")
-elif metrics['mAP50'] > 0.75:
+elif metrics["mAP50"] > 0.75:
     print("  ⭐⭐ ACCEPTABLE - Functional performance")
 else:
     print("  ⭐ NEEDS IMPROVEMENT - Low accuracy")
 
 # Save results
 output_file = OUTPUT_DIR / "pretrained_model_test_results.json"
-with open(output_file, 'w') as f:
+with open(output_file, "w") as f:
     json.dump(metrics, f, indent=2)
 
 print(f"\n✓ Results saved to: {output_file}")
 
 # Additional per-class metrics if available
-if hasattr(results.box, 'ap_class_index'):
+if hasattr(results.box, "ap_class_index"):
     print("\n" + "=" * 80)
     print("PER-CLASS PERFORMANCE")
     print("=" * 80)
-    
-    class_names = ['header', 'body', 'footer']
-    
+
+    class_names = ["header", "body", "footer"]
+
     for i, class_name in enumerate(class_names):
         if i < len(results.box.ap50):
             ap50 = results.box.ap50[i]
