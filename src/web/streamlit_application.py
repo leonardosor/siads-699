@@ -485,251 +485,492 @@ def _bytes_to_image(data: bytes, filename: str = "") -> Image.Image:
         return Image.open(io.BytesIO(data)).convert("RGB")
 
 
-def main() -> None:
-    st.set_page_config(
-        page_title="Financial Form Text Extractor",
-        layout="wide",
-    )
-    st.title(
-        "University of Michigan \n Master of Applied Data Science - Capstone Project \nFinancial Form Text Extractor"
-    )
-    st.caption(
-        "Upload a JPG/PNG/PDF from a financial form to generate bounding boxes and extract text using Optical Character Recognition (OCR)."
-    )
-
-    if not DEFAULT_MODEL_PATH.exists():
-        st.error(
-            f"Model weights not found at `{DEFAULT_MODEL_PATH}`. "
-            "Copy your trained checkpoint there or set the MODEL_PATH environment variable."
-        )
-        return
-
+def render_sidebar(confidence: float, iou: float, show_controls: bool = False):
+    """Render left sidebar"""
     with st.sidebar:
-        st.header("Inference Controls")
-        confidence = st.slider(
-            "Confidence threshold", min_value=0.1, max_value=0.9, value=0.35, step=0.05
+        if show_controls:
+
+            st.markdown("## ⚙️ Inference Controls")
+            
+            st.markdown(f"**Confidence Threshold** `{confidence:.2f}`")
+            new_conf = st.slider("", 0.10, 0.90, confidence, 0.05, label_visibility="collapsed", key="conf_sl")
+            
+            st.markdown(f"**IoU Threshold** `{iou:.2f}`")
+            new_iou = st.slider("", 0.10, 0.90, iou, 0.05, label_visibility="collapsed", key="iou_sl")
+            
+            st.markdown("---")
+            
+            with st.expander("📁 Model Information", expanded=True):
+                st.markdown("**Model:** YOLOv8")
+                if DEFAULT_MODEL_PATH.exists():
+                    size_mb = DEFAULT_MODEL_PATH.stat().st_size / (1024 * 1024)
+                    st.markdown(f"**Status:** ✅ Loaded")
+                    st.markdown(f"**Size:** {size_mb:.1f} MB")
+                    st.markdown(f"**Path:** `{DEFAULT_MODEL_PATH.name}`")
+                else:
+                    st.markdown("**Status:** ❌ Not found")
+            
+            with st.expander("💡 About this tool", expanded=False):
+                st.markdown("""
+                    This application uses YOLOv8 to detect and extract text regions (header, body, footer) 
+                    from financial form images. Supported formats: JPG, PNG, PDF. Upload your scanned forms 
+                    to get accurate bounding boxes and detailed detection data.
+                """)
+            
+            with st.expander("ℹ️ Quick Guide", expanded=True):
+                st.markdown("""
+                    **How to use:**
+                    
+                    1. Choose upload mode on home
+                    2. Upload JPG/PNG/PDF images
+                    3. Adjust thresholds if needed
+                    4. Download results
+                    
+                    **Detection Classes:**
+                    - 📋 Header
+                    - 📝 Body  
+                    - 🔽 Footer
+                """)
+        else:
+            with st.expander("💡 About this tool", expanded=True):
+                st.markdown("""
+                    This application uses YOLOv8 to detect and extract text regions (header, body, footer) 
+                    from financial form images. Supported formats: JPG, PNG, PDF. Upload your scanned forms 
+                    to get accurate bounding boxes and detailed detection data.
+                """)
+            
+            with st.expander("ℹ️ Quick Guide", expanded=True):
+                st.markdown("""
+                    **How to use:**
+                    
+                    1. Choose upload mode on home
+                    2. Upload JPG/PNG/PDF images
+                    3. Adjust thresholds if needed
+                    4. Download results
+                    
+                    **Detection Classes:**
+                    - 📋 Header
+                    - 📝 Body  
+                    - 🔽 Footer
+                """)
+            
+            with st.expander("📁 Model Information", expanded=False):
+                st.markdown("**Model:** YOLOv8")
+                if DEFAULT_MODEL_PATH.exists():
+                    size_mb = DEFAULT_MODEL_PATH.stat().st_size / (1024 * 1024)
+                    st.markdown(f"**Status:** ✅ Loaded")
+                    st.markdown(f"**Size:** {size_mb:.1f} MB")
+                    st.markdown(f"**Path:** `{DEFAULT_MODEL_PATH.name}`")
+                else:
+                    st.markdown("**Status:** ❌ Not found")
+            
+            new_conf = confidence
+            new_iou = iou
+    
+    return new_conf, new_iou
+
+
+def render_landing_page(confidence: float, iou: float) -> None:
+    """Landing page matching Figma design."""
+    st.markdown(
+        f"""
+        <div class='hero-section'>
+            <h1>Financial Form Text Extractor</h1>
+            <p class='hero-subtitle'>University of Michigan MADS Capstone Fall 2025</p>
+            <p class='team-names'>Joey Higgins • Leonardo Cedeno • Kajal Dattatray Raut • Denesh Chandrahasan</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    
+    st.markdown("<h2 style='text-align: center; color: #1e293b;'>Choose Your Upload Mode</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #64748b; margin-bottom: 2rem;'>Select how you want to process your financial forms</p>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2, gap="large")
+    
+    with col1:
+        st.markdown(
+            """
+            <div class='upload-card'>
+                <div class='icon-circle icon-blue'>🎯</div>
+                <div class='card-title'>Try Me Out</div>
+                <p class='card-description'>Test the app instantly with a preloaded demo form</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-        iou = st.slider(
-            "IoU threshold", min_value=0.1, max_value=0.9, value=0.5, step=0.05
+        if st.button("⚡ Launch Demo", key="demo", type="primary"):
+            st.session_state.page = "demo"
+            st.rerun()
+    
+    with col2:
+        st.markdown(
+            """
+            <div class='upload-card'>
+                <div class='icon-circle icon-maize'>📤</div>
+                <div class='card-title'>Upload Your Forms</div>
+                <p class='card-description'>Process your own forms (single or multiple files)</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-
-        st.header("OCR Settings")
-        extract_text = st.checkbox(
-            "Extract text from detected regions",
-            value=True,
-            help="Use Tesseract OCR to extract text from each detected bounding box",
-        )
-
-        enhanced_ocr = False
-
-        st.info(
-            "Using optimized Tesseract OCR with smart PSM mode selection:\n"
-            "- Large regions (body, tables): PSM 3 (automatic)\n"
-            "- Headers/footers: PSM 3 (automatic)\n"
-            "- Form fields: PSM 7 (single line)"
-        )
-
-        st.write("Weights file:")
-        st.code(str(DEFAULT_MODEL_PATH))
-
-        if st.button(
-            "🔄 Reload Model", help="Clear cache and reload model weights from disk"
-        ):
-            st.cache_resource.clear()
-            st.success("Model cache cleared! Reloading...")
+        if st.button("📂 Start Upload", key="upload", type="primary"):
+            st.session_state.page = "upload"
             st.rerun()
 
-    uploads = st.file_uploader(
-        "Upload one or more JPG/PNG/PDF files",
-        type=ALLOWED_TYPES,
-        accept_multiple_files=True,
-    )
 
-    if not uploads:
-        st.info(
-            "Waiting for uploads… drag a JPG/PNG/PDF into the widget above to begin."
-        )
+def render_demo_page(confidence: float, iou: float) -> None:
+    col_back, col_spacer = st.columns([1, 5])
+    with col_back:
+        if st.button("← Back to Home", key="back_demo"):
+            st.session_state.page = "home"
+            st.rerun()
+    
+    demo_path = Path(__file__).parent / "demo_form.jpg"
+    if not demo_path.exists():
+        st.error("Demo form not found")
         return
-
-    for uploaded in uploads:
-        st.markdown(f"### {uploaded.name}")
-        images = _bytes_to_image(uploaded.getvalue(), uploaded.name)
-
-        # Process each page/image
-        for page_num, raw_image in enumerate(images, start=1):
-            page_suffix = f" (Page {page_num}/{len(images)})" if len(images) > 1 else ""
-
-            st.image(
-                raw_image, caption=f"Original{page_suffix}", use_container_width=True
-            )
-            spinner_text = (
-                f"Running YOLOv8 inference and OCR{page_suffix}…"
-                if extract_text
-                else f"Running YOLOv8 inference{page_suffix}…"
-            )
-            with st.spinner(spinner_text):
-                annotated, detections = _run_inference(
-                    raw_image,
-                    confidence,
-                    iou,
-                    extract_text=extract_text,
-                    enhanced_ocr=enhanced_ocr,
-                )
-
-            if detections.empty:
-                st.warning(
-                    f"No bounding boxes detected with the current thresholds{page_suffix}."
-                )
-                continue
-
-            annotated_buffer = io.BytesIO()
-            annotated.save(annotated_buffer, format="JPEG")
-
-            st.image(
-                annotated_buffer.getvalue(),
-                # caption=f"UM-Branded Bounding Boxes{page_suffix}",
-                use_container_width=True,
-            )
-
-            download_filename = (
-                f"{Path(uploaded.name).stem}_page{page_num}_umich_bboxes.jpg"
-                if len(images) > 1
-                else f"{Path(uploaded.name).stem}_umich_bboxes.jpg"
-            )
+    
+    raw_image = Image.open(demo_path).convert("RGB")
+    
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        st.markdown(
+            """
+            <style>
+            button[key="run_demo"] {
+                font-size: 1.2rem !important;
+                font-weight: 700 !important;
+                padding: 0.75rem 1.5rem !important;
+                width: 100% !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("Run Detection", key="run_demo", type="primary"):
+            with st.spinner("Running inference..."):
+                annotated, detections, inf_time = _run_inference(raw_image, confidence, iou)
+            
+            st.session_state.demo_results = {
+                'annotated': annotated,
+                'detections': detections,
+                'inf_time': inf_time,
+                'raw_image': raw_image
+            }
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        import base64
+        buffered = io.BytesIO()
+        raw_image.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        
+        st.markdown(
+            f"""
+            <div style='border: 3px solid {UM_BLUE}; border-radius: 8px; padding: 0.5rem; background: white; margin-top: 1rem;'>
+                <img src='data:image/jpeg;base64,{img_str}' style='width: 100%; border-radius: 4px;' />
+                <p style='text-align: center; color: #64748b; margin-top: 0.5rem; margin-bottom: 0; font-size: 0.9rem;'>Demo Financial Statement</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    
+    if 'demo_results' in st.session_state:
+        results = st.session_state.demo_results
+        detections = results['detections']
+        
+        st.markdown("---")
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            buf = io.BytesIO()
+            results['annotated'].save(buf, format="JPEG", quality=95)
             st.download_button(
-                label=f"Download annotated JPG{page_suffix}",
-                data=annotated_buffer.getvalue(),
-                file_name=download_filename,
-                mime="image/jpeg",
-                key=f"download-{uploaded.name}-page{page_num}",
+                "Download annotated image",
+                buf.getvalue(),
+                "demo_annotated.jpg",
+                "image/jpeg",
+                key="download_annotated",
+                type="primary",
+                use_container_width=True
             )
-
-            st.subheader(f"Detections{page_suffix}")
-
-            # Format the detections dataframe
-            pretty = detections.copy()
-            pretty["confidence"] = (pretty["confidence"] * 100).round(1).astype(
-                str
-            ) + "%"
-
-            # If OCR was performed, format those columns too
-            if extract_text and "ocr_confidence" in pretty.columns:
-                pretty["ocr_confidence"] = (
-                    pretty["ocr_confidence"].round(1).astype(str) + "%"
+        
+        st.markdown("### Results")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.image(results['raw_image'], caption="Original", use_column_width=True)
+        with c2:
+            st.image(results['annotated'], caption="Detected", use_column_width=True)
+        
+        st.subheader("Detections")
+        
+        if not detections.empty:
+            display_df = detections.copy()
+            
+            display_df['confidence'] = (display_df['confidence'] * 100).round(1).astype(str) + '%'
+            
+            if 'ocr_confidence' in display_df.columns:
+                display_df['ocr_confidence'] = display_df['ocr_confidence'].round(1).astype(str) + '%'
+            
+            cols_order = ['label']
+            if 'extracted_text' in display_df.columns:
+                cols_order.append('extracted_text')
+            cols_order.extend(['confidence'])
+            if 'ocr_confidence' in display_df.columns:
+                cols_order.append('ocr_confidence')
+            if 'word_count' in display_df.columns:
+                cols_order.append('word_count')
+            cols_order.extend(['x1', 'y1', 'x2', 'y2'])
+            
+            display_df = display_df[[col for col in cols_order if col in display_df.columns]]
+            
+            st.dataframe(display_df, use_container_width=True)
+        
+        if 'extracted_text' in detections.columns:
+            col_left, col1, col2, col3, col_right = st.columns([1, 1, 1, 1, 1])
+            
+            with col1:
+                text_buffer = io.StringIO()
+                for idx, row in detections.iterrows():
+                    if row.get('extracted_text') and len(row['extracted_text'].strip()) > 0:
+                        text_buffer.write(f"{row['label'].upper()}\n")
+                        text_buffer.write(f"{row['extracted_text']}\n")
+                        text_buffer.write(f"(Confidence: {row['confidence']:.1%}, OCR: {row['ocr_confidence']:.1f}%)\n")
+                        text_buffer.write("\n" + "="*50 + "\n\n")
+                
+                st.download_button(
+                    "📥 Download Extracted Text",
+                    text_buffer.getvalue(),
+                    "demo_extracted_text.txt",
+                    "text/plain",
+                    key="download_text",
+                    type="primary",
+                    use_container_width=True
                 )
-                # Reorder columns to show extracted text prominently
-                display_cols = [
-                    "label",
-                    "extracted_text",
-                    "confidence",
-                    "ocr_confidence",
-                    "word_count",
-                    "x1",
-                    "y1",
-                    "x2",
-                    "y2",
-                ]
-                display_cols = [col for col in display_cols if col in pretty.columns]
-                pretty = pretty[display_cols]
+            
+            with col2:
+                csv_buffer = io.StringIO()
+                detections.to_csv(csv_buffer, index=False)
+                st.download_button(
+                    "📥 Download CSV",
+                    csv_buffer.getvalue(),
+                    "demo_detections.csv",
+                    "text/csv",
+                    key="download_csv",
+                    type="primary",
+                    use_container_width=True
+                )
+            
+            with col3:
+                json_str = detections.to_json(orient='records', indent=2)
+                st.download_button(
+                    "📥 Download JSON",
+                    json_str,
+                    "demo_detections.json",
+                    "application/json",
+                    key="download_json",
+                    type="primary",
+                    use_container_width=True
+                )
+        
+        if 'extracted_text' in detections.columns:
+            texts_found = detections[detections['extracted_text'].str.len() > 0]
+            if len(texts_found) > 0:
+                st.subheader("Extracted Text Summary")
+                st.info(f"Found text in {len(texts_found)} out of {len(detections)} detections")
+                
+                # Display each extracted text with its label
+                for idx, row in texts_found.iterrows():
+                    with st.expander(
+                        f"📄 {row['label']} (confidence: {row['confidence']:.1%})"
+                    ):
+                        st.write(row['extracted_text'])
+                        st.caption(
+                            f"OCR Confidence: {row['ocr_confidence']:.1f}% | Words: {row['word_count']}"
+                        )
+            else:
+                st.warning("No text extracted from detected regions. Try adjusting confidence thresholds.")
 
-            st.dataframe(pretty, use_container_width=True, hide_index=True)
 
-            # Add download buttons for OCR results
-            if (
-                extract_text
-                and "extracted_text" in detections.columns
-                and len(detections) > 0
-            ):
-                col1, col2, col3 = st.columns(3)
-
-                with col1:
-                    # Text download - clean formatted text only
-                    text_buffer = io.StringIO()
-                    text_buffer.write(f"Extracted Text from {uploaded.name}\n")
-                    if len(images) > 1:
-                        text_buffer.write(f"Page {page_num} of {len(images)}\n")
-                    text_buffer.write("=" * 60 + "\n\n")
-
-                    for _, row in detections.iterrows():
-                        if (
-                            row["extracted_text"]
-                            and len(row["extracted_text"].strip()) > 0
-                        ):
-                            text_buffer.write(f"[{row['label'].upper()}]\n")
-                            text_buffer.write(f"{row['extracted_text']}\n")
-                            text_buffer.write(
-                                f"(Confidence: {row['confidence']:.1%}, OCR: {row['ocr_confidence']:.1f}%)\n"
-                            )
-                            text_buffer.write("-" * 60 + "\n\n")
-
-                    text_filename = (
-                        f"{Path(uploaded.name).stem}_page{page_num}_extracted_text.txt"
-                        if len(images) > 1
-                        else f"{Path(uploaded.name).stem}_extracted_text.txt"
-                    )
-                    st.download_button(
-                        label="📥 Download Extracted Text",
-                        data=text_buffer.getvalue(),
-                        file_name=text_filename,
-                        mime="text/plain",
-                        key=f"txt-{uploaded.name}-page{page_num}",
-                    )
-
+def render_upload_page(confidence: float, iou: float) -> None:
+    col_back, col_spacer = st.columns([1, 5])
+    with col_back:
+        if st.button("← Back to Home", key="back_upload"):
+            st.session_state.page = "home"
+            st.rerun()
+    
+    st.markdown("<h2 style='text-align: center;'>Upload Your Forms</h2>", unsafe_allow_html=True)
+    
+    uploads = st.file_uploader("", type=ALLOWED_TYPES, accept_multiple_files=True, label_visibility="collapsed")
+    
+    if uploads:
+        for idx, uploaded in enumerate(uploads):
+            try:
+                raw_image = _bytes_to_image(uploaded.getvalue(), uploaded.name)
+                
+                result_key = f"upload_result_{idx}_{uploaded.name}"
+                
+                if result_key not in st.session_state:
+                    with st.spinner(f"Processing {uploaded.name}..."):
+                        annotated, detections, inf_time = _run_inference(raw_image, confidence, iou)
+                    
+                    st.session_state[result_key] = {
+                        'annotated': annotated,
+                        'detections': detections,
+                        'inf_time': inf_time,
+                        'raw_image': raw_image,
+                        'filename': uploaded.name
+                    }
+                
+                results = st.session_state[result_key]
+                detections = results['detections']
+                
+                st.markdown("---")
+                st.markdown(f"<h4 style='text-align: center; font-size: 1.1rem;'>{uploaded.name}</h4>", unsafe_allow_html=True)
+                
+                col1, col2, col3 = st.columns([1, 1, 1])
                 with col2:
-                    # CSV download
-                    csv_buffer = io.StringIO()
-                    detections.to_csv(csv_buffer, index=False)
-                    csv_filename = (
-                        f"{Path(uploaded.name).stem}_page{page_num}_ocr_results.csv"
-                        if len(images) > 1
-                        else f"{Path(uploaded.name).stem}_ocr_results.csv"
-                    )
+                    buf = io.BytesIO()
+                    results['annotated'].save(buf, format="JPEG", quality=95)
                     st.download_button(
-                        label="📥 Download CSV",
-                        data=csv_buffer.getvalue(),
-                        file_name=csv_filename,
-                        mime="text/csv",
-                        key=f"csv-{uploaded.name}-page{page_num}",
+                        "Download annotated image",
+                        buf.getvalue(),
+                        f"{Path(uploaded.name).stem}_annotated.jpg",
+                        "image/jpeg",
+                        key=f"download_annotated_{idx}",
+                        type="primary",
+                        use_container_width=True
                     )
+                
+                st.markdown("### Results")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.image(results['raw_image'], caption="Original", use_column_width=True)
+                with c2:
+                    st.image(results['annotated'], caption="Detected", use_column_width=True)
+                
+                st.subheader("Detections")
+                
+                if not detections.empty:
+                    display_df = detections.copy()
+                    
+                    display_df['confidence'] = (display_df['confidence'] * 100).round(1).astype(str) + '%'
+                    
+                    if 'ocr_confidence' in display_df.columns:
+                        display_df['ocr_confidence'] = display_df['ocr_confidence'].round(1).astype(str) + '%'
+                    
+                    cols_order = ['label']
+                    if 'extracted_text' in display_df.columns:
+                        cols_order.append('extracted_text')
+                    cols_order.extend(['confidence'])
+                    if 'ocr_confidence' in display_df.columns:
+                        cols_order.append('ocr_confidence')
+                    if 'word_count' in display_df.columns:
+                        cols_order.append('word_count')
+                    cols_order.extend(['x1', 'y1', 'x2', 'y2'])
+                    
+                    display_df = display_df[[col for col in cols_order if col in display_df.columns]]
+                    
+                    st.dataframe(display_df, use_container_width=True)
+                
+                if 'extracted_text' in detections.columns:
+                    col_left, col1, col2, col3, col_right = st.columns([1, 1, 1, 1, 1])
+                    
+                    with col1:
+                        text_buffer = io.StringIO()
+                        for _, row in detections.iterrows():
+                            if row.get('extracted_text') and len(row['extracted_text'].strip()) > 0:
+                                text_buffer.write(f"{row['label'].upper()}\n")
+                                text_buffer.write(f"{row['extracted_text']}\n")
+                                text_buffer.write(f"(Confidence: {row['confidence']:.1%}, OCR: {row['ocr_confidence']:.1f}%)\n")
+                                text_buffer.write("\n" + "="*50 + "\n\n")
+                        
+                        st.download_button(
+                            "📥 Download Extracted Text",
+                            text_buffer.getvalue(),
+                            f"{Path(uploaded.name).stem}_extracted_text.txt",
+                            "text/plain",
+                            key=f"download_text_{idx}",
+                            type="primary",
+                            use_container_width=True
+                        )
+                    
+                    with col2:
+                        csv_buffer = io.StringIO()
+                        detections.to_csv(csv_buffer, index=False)
+                        st.download_button(
+                            "📥 Download CSV",
+                            csv_buffer.getvalue(),
+                            f"{Path(uploaded.name).stem}_detections.csv",
+                            "text/csv",
+                            key=f"download_csv_{idx}",
+                            type="primary",
+                            use_container_width=True
+                        )
+                    
+                    with col3:
+                        json_str = detections.to_json(orient='records', indent=2)
+                        st.download_button(
+                            "📥 Download JSON",
+                            json_str,
+                            f"{Path(uploaded.name).stem}_detections.json",
+                            "application/json",
+                            key=f"download_json_{idx}",
+                            type="primary",
+                            use_container_width=True
+                        )
+                
+                if 'extracted_text' in detections.columns:
+                    texts_found = detections[detections['extracted_text'].str.len() > 0]
+                    if len(texts_found) > 0:
+                        st.subheader("Extracted Text Summary")
+                        st.info(f"Found text in {len(texts_found)} out of {len(detections)} detections")
+                        
+                        # Display each extracted text with its label
+                        for _, row in texts_found.iterrows():
+                            with st.expander(
+                                f"📄 {row['label']} (confidence: {row['confidence']:.1%})"
+                            ):
+                                st.write(row['extracted_text'])
+                                st.caption(
+                                    f"OCR Confidence: {row['ocr_confidence']:.1f}% | Words: {row['word_count']}"
+                                )
+                    else:
+                        st.warning("No text extracted from detected regions. Try adjusting confidence thresholds.")
+                
+            except Exception as e:
+                st.error(f"Error processing {uploaded.name}: {str(e)}")
 
-                with col3:
-                    # JSON download
-                    json_data = detections.to_dict(orient="records")
-                    json_filename = (
-                        f"{Path(uploaded.name).stem}_page{page_num}_ocr_results.json"
-                        if len(images) > 1
-                        else f"{Path(uploaded.name).stem}_ocr_results.json"
-                    )
-                    st.download_button(
-                        label="📥 Download JSON",
-                        data=json.dumps(json_data, indent=2),
-                        file_name=json_filename,
-                        mime="application/json",
-                        key=f"json-{uploaded.name}-page{page_num}",
-                    )
 
-            # Show extracted text summary if OCR was performed
-            if extract_text and "extracted_text" in detections.columns:
-                texts_found = detections[detections["extracted_text"].str.len() > 0]
-                if len(texts_found) > 0:
-                    st.subheader(f"Extracted Text Summary{page_suffix}")
-                    st.info(
-                        f"Found text in {len(texts_found)} out of {len(detections)} detections"
-                    )
 
-                    # Display each extracted text with its label
-                    for idx, row in texts_found.iterrows():
-                        with st.expander(
-                            f"📄 {row['label']} (confidence: {row['confidence']:.1%})"
-                        ):
-                            st.write(row["extracted_text"])
-                            st.caption(
-                                f"OCR Confidence: {row['ocr_confidence']:.1f}% | Words: {row['word_count']}"
-                            )
-                else:
-                    st.warning(
-                        f"No text extracted from detected regions{page_suffix}. Try adjusting confidence thresholds or check image quality."
-                    )
+def main() -> None:
+    inject_custom_css()
+    
+    if not DEFAULT_MODEL_PATH.exists():
+        st.error("❌ Model weights not found")
+        return
+    
+    if "page" not in st.session_state:
+        st.session_state.page = "home"
+    if "confidence" not in st.session_state:
+        st.session_state.confidence = 0.45
+    if "iou" not in st.session_state:
+        st.session_state.iou = 0.50
+    
+    if st.session_state.page in ["demo", "upload"]:
+        new_conf, new_iou = render_sidebar(st.session_state.confidence, st.session_state.iou, show_controls=True)
+        st.session_state.confidence = new_conf
+        st.session_state.iou = new_iou
+    else:
+        render_sidebar(st.session_state.confidence, st.session_state.iou, show_controls=False)
+    
+    if st.session_state.page == "home":
+        render_landing_page(st.session_state.confidence, st.session_state.iou)
+    elif st.session_state.page == "demo":
+        render_demo_page(st.session_state.confidence, st.session_state.iou)
+    elif st.session_state.page == "upload":
+        render_upload_page(st.session_state.confidence, st.session_state.iou)
 
 
 if __name__ == "__main__":
