@@ -82,10 +82,259 @@ except ImportError:
     st.stop()
 
 
+
+def inject_custom_css() -> None:
+    st.markdown(
+        f"""
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {{ font-family: 'Inter', sans-serif; }}
+        
+        #MainMenu, footer, header {{visibility: hidden;}}
+        .stDeployButton {{display: none;}}
+        
+        /* Main */
+        .main {{ padding: 0.5rem 3rem 2rem 3rem; background: #f5f5f7; }}
+        
+        /* Hero - Navy gradient */
+        .hero-section {{
+            background: linear-gradient(135deg, #003d5c 0%, #00274C 100%);
+            border-radius: 20px;
+            padding: 1.5rem 3rem;
+            margin-bottom: 1.5rem;
+            color: white;
+            position: relative;
+        }}
+        
+        .hero-section h1 {{
+            color: white !important;
+            font-size: 2.75rem !important;
+            font-weight: 700 !important;
+            margin: 0 0 0.5rem 0 !important;
+        }}
+        
+        .hero-subtitle {{
+            color: {UM_MAIZE} !important;
+            font-size: 1.1rem !important;
+            font-weight: 500 !important;
+            margin: 0 0 1rem 0 !important;
+        }}
+        
+        .team-names {{
+            color: rgba(255,255,255,0.8);
+            font-size: 0.95rem;
+        }}
+        
+        .version-badge {{
+            position: absolute;
+            top: 2.5rem;
+            right: 3rem;
+            background: {UM_MAIZE};
+            color: {UM_BLUE};
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }}
+        
+        /* Sidebar */
+        [data-testid="stSidebar"] {{
+            background: {UM_BLUE};
+            color: white;
+        }}
+        
+        [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {{
+            color: white !important;
+            font-weight: 600 !important;
+        }}
+        
+        [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {{
+            color: rgba(255,255,255,0.9) !important;
+        }}
+        
+        [data-testid="stSidebar"] .stMarkdown {{
+            color: rgba(255,255,255,0.9);
+        }}
+        
+        /* Expanders in sidebar */
+        [data-testid="stSidebar"] .streamlit-expanderHeader {{
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: white !important;
+            font-weight: 600;
+        }}
+        
+        [data-testid="stSidebar"] [data-testid="stExpander"] {{
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }}
+        
+        /* Cards matching Figma */
+        .upload-card {{
+            background: white;
+            border: 2px solid {UM_MAIZE};
+            border-radius: 16px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            height: 100%;
+            cursor: pointer;
+        }}
+        
+        .upload-card:hover {{
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+        }}
+        
+        /* Make card buttons look like cards */
+        div[data-testid="column"] .stButton > button {{
+            background: white !important;
+            border: 2px solid {UM_MAIZE} !important;
+            border-radius: 16px !important;
+            padding: 2.5rem !important;
+            text-align: center !important;
+            height: auto !important;
+            min-height: 280px !important;
+            color: #1e293b !important;
+            font-weight: 400 !important;
+            white-space: pre-line !important;
+            line-height: 1.6 !important;
+            font-size: 1rem !important;
+        }}
+        
+        div[data-testid="column"] .stButton > button:hover {{
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+            transform: translateY(-5px) !important;
+            background: white !important;
+            border-color: {UM_MAIZE} !important;
+        }}
+        
+        div[data-testid="column"] .stButton > button strong {{
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: block;
+            margin: 1rem 0;
+        }}
+        
+        .icon-circle {{
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }}
+        
+        .icon-blue {{ background: #e8f1f8; }}
+        .icon-maize {{ background: #fef9e7; }}
+        
+        .card-title {{
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.75rem;
+        }}
+        
+        .card-description {{
+            color: #64748b;
+            margin-bottom: 0;
+        }}
+        
+        /* Buttons matching Figma */
+        .stButton > button {{
+            width: 100%;
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            transition: all 0.2s ease;
+        }}
+        
+        /* Primary buttons - UM Blue */
+        button[kind="primary"] {{
+            background: {UM_BLUE} !important;
+            color: white !important;
+        }}
+        
+        button[kind="primary"]:hover {{
+            background: #003366 !important;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,39,76,0.3);
+        }}
+        
+        /* Architecture cards */
+        .arch-card {{
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: left;
+        }}
+        
+        .arch-icon {{
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }}
+        
+        /* Slider styling - UM Maize (WORKING from v3) */
+        .stSlider > div > div > div > div {{
+            background-color: {UM_MAIZE} !important;
+        }}
+        
+        .stSlider > div > div > div {{
+            background-color: rgba(255, 203, 5, 0.3) !important;
+        }}
+        
+        /* Min/Max labels white text */
+        [data-testid="stSidebar"] .stSlider [data-testid="stTickBarMin"],
+        [data-testid="stSidebar"] .stSlider [data-testid="stTickBarMax"] {{
+            color: white !important;
+        }}
+        
+        /* Download buttons */
+        .stDownloadButton > button {{
+            border-radius: 8px;
+            font-weight: 600;
+        }}
+        
+        /* Expanders */
+        .streamlit-expanderHeader {{
+            background: #f8fafc;
+            border-radius: 8px;
+            color: #1e293b;
+            font-weight: 600;
+        }}
+        
+        /* File uploader */
+        [data-testid="stFileUploader"] {{
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 2rem;
+            background: white;
+        }}
+        
+        h2 {{
+            color: #1e293b !important;
+            font-weight: 600 !important;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 @st.cache_resource(show_spinner=False)
 def load_model(weights_path: Path) -> YOLO:
     return YOLO(str(weights_path))
-
 
 @st.cache_data(show_spinner=False)
 def _load_font(size: int = 18) -> ImageFont.FreeTypeFont:
@@ -96,105 +345,81 @@ def _load_font(size: int = 18) -> ImageFont.FreeTypeFont:
             continue
     return ImageFont.load_default()
 
-
 def _extract_text_from_bbox(
     image: Image.Image,
     bbox: Tuple[float, float, float, float],
-    enhanced: bool = True,
     label: str = "",
 ) -> dict:
+    """Extract text from a bounding box region using Tesseract OCR."""
+    if not TESSERACT_AVAILABLE:
+        return {"text": "", "ocr_confidence": 0, "word_count": 0}
+    
     try:
-        if enhanced:
-            result = enhanced_extract_text(image, bbox, enhanced=True)
-            return {
-                "text": result.get("text", ""),
-                "ocr_confidence": result.get("confidence", 0),
-                "word_count": result.get("word_count", 0),
-                "method": result.get("method", ""),
-                "psm_mode": result.get("psm_mode", ""),
-            }
+        x1, y1, x2, y2 = bbox
+        padding = 10
+        x1 = max(0, int(x1) - padding)
+        y1 = max(0, int(y1) - padding)
+        x2 = min(image.width, int(x2) + padding)
+        y2 = min(image.height, int(y2) + padding)
+
+        cropped = image.crop((x1, y1, x2, y2))
+        
+        if cropped.mode != 'RGB':
+            cropped = cropped.convert('RGB')
+
+        width = x2 - x1
+        height = y2 - y1
+        area_ratio = (width * height) / (image.width * image.height)
+
+        # Choose PSM mode based on region type and size
+        if area_ratio > 0.3 or label.lower() in ["body", "document", "page", "form", "table"]:
+            psm_mode = 3  # Fully automatic page segmentation
+        elif label.lower() in ["header", "title", "heading", "footer"]:
+            psm_mode = 3
+        elif area_ratio > 0.15:
+            psm_mode = 6  # Assume uniform block of text
+        elif height > width * 2:
+            psm_mode = 6  # Tall region
+        elif width > height * 3:
+            psm_mode = 7  # Single line
         else:
-            x1, y1, x2, y2 = bbox
-            padding = 10
-            x1 = max(0, int(x1) - padding)
-            y1 = max(0, int(y1) - padding)
-            x2 = min(image.width, int(x2) + padding)
-            y2 = min(image.height, int(y2) + padding)
+            psm_mode = 7  # Single line default
 
-            cropped = image.crop((x1, y1, x2, y2))
+        text = pytesseract.image_to_string(
+            cropped, config=f"--psm {psm_mode}"
+        ).strip()
 
-            width = x2 - x1
-            height = y2 - y1
-            area_ratio = (width * height) / (image.width * image.height)
+        data = pytesseract.image_to_data(
+            cropped, output_type=pytesseract.Output.DICT
+        )
+        confidences = [
+            int(conf) for conf in data["conf"] if conf != "-1" and int(conf) > 0
+        ]
+        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
 
-            if area_ratio > 0.3 or label.lower() in [
-                "body",
-                "document",
-                "page",
-                "form",
-                "table",
-            ]:
-                psm_mode = 3
-            elif label.lower() in ["header", "title", "heading", "footer"]:
-                psm_mode = 3
-            elif area_ratio > 0.15:
-                psm_mode = 6
-            elif height > width * 2:
-                psm_mode = 6
-            elif width > height * 3:
-                psm_mode = 7
-            else:
-                psm_mode = 7
-
-            text = pytesseract.image_to_string(
-                cropped, config=f"--psm {psm_mode}"
-            ).strip()
-
-            data = pytesseract.image_to_data(
-                cropped, output_type=pytesseract.Output.DICT
-            )
-            confidences = [
-                int(conf) for conf in data["conf"] if conf != "-1" and int(conf) > 0
-            ]
-            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-
-            return {
-                "text": text,
-                "ocr_confidence": avg_confidence,
-                "word_count": len([w for w in text.split() if w]),
-                "psm_mode": psm_mode,
-            }
+        return {
+            "text": text,
+            "ocr_confidence": avg_confidence,
+            "word_count": len([w for w in text.split() if w]),
+        }
     except Exception as e:
+        st.error(f"OCR Error for {label}: {str(e)}")
         return {"text": "", "ocr_confidence": 0, "word_count": 0, "error": str(e)}
 
-
-def _format_detections(
-    result,
-    image: Image.Image = None,
-    extract_text: bool = False,
-    enhanced_ocr: bool = True,
-) -> pd.DataFrame:
+def _format_detections(result, image: Image.Image = None, extract_text: bool = False) -> pd.DataFrame:
     boxes = getattr(result, "boxes", None)
     if boxes is None or len(boxes) == 0:
-        return pd.DataFrame(
-            columns=[
-                "label",
-                "confidence",
-                "x1",
-                "y1",
-                "x2",
-                "y2",
-                "extracted_text",
-                "ocr_confidence",
-            ]
-        )
-
+        base_cols = ["label", "confidence", "x1", "y1", "x2", "y2"]
+        if extract_text:
+            base_cols.extend(["extracted_text", "ocr_confidence", "word_count"])
+        return pd.DataFrame(columns=base_cols)
+    
     xyxy = boxes.xyxy.cpu().numpy()
     conf = boxes.conf.cpu().numpy()
     cls_ids = boxes.cls.cpu().numpy()
     names = result.names or {}
-
     rows: List[dict] = []
+    
     for coords, confidence, cls_id in zip(xyxy, conf, cls_ids):
         row_data = {
             "label": names.get(int(cls_id), f"class_{int(cls_id)}"),
@@ -204,24 +429,18 @@ def _format_detections(
             "x2": float(coords[2]),
             "y2": float(coords[3]),
         }
-
+        
         # Extract text if requested and image is provided
         if extract_text and image is not None:
             bbox = (coords[0], coords[1], coords[2], coords[3])
             label = row_data["label"]
-            ocr_result = _extract_text_from_bbox(
-                image, bbox, enhanced=enhanced_ocr, label=label
-            )
+            ocr_result = _extract_text_from_bbox(image, bbox, label=label)
             row_data["extracted_text"] = ocr_result["text"]
             row_data["ocr_confidence"] = ocr_result["ocr_confidence"]
             row_data["word_count"] = ocr_result["word_count"]
-            # Always include PSM mode for debugging
-            row_data["ocr_psm_mode"] = ocr_result.get("psm_mode", "")
-            if enhanced_ocr:
-                row_data["ocr_method"] = ocr_result.get("method", "")
-
+        
         rows.append(row_data)
-
+    
     df = pd.DataFrame.from_records(rows)
     return df.sort_values("confidence", ascending=False).reset_index(drop=True)
 
@@ -229,61 +448,41 @@ def _format_detections(
 def _annotate_umich(image: Image.Image, detections: pd.DataFrame) -> Image.Image:
     if detections.empty:
         return image
-
     annotated = image.copy()
     draw = ImageDraw.Draw(annotated)
     font = _load_font()
-
     for _, row in detections.iterrows():
         box = (row["x1"], row["y1"], row["x2"], row["y2"])
         label = row["label"]
         conf = row["confidence"]
         text = f"{label} {conf:.2f}"
-
         draw.rectangle(box, outline=UM_BLUE, width=4)
-
         text_bbox = draw.textbbox((box[0], box[1]), text, font=font)
         text_height = text_bbox[3] - text_bbox[1]
         text_width = text_bbox[2] - text_bbox[0]
         label_y = max(box[1] - text_height - 10, 0)
-        background = (
-            box[0],
-            label_y,
-            box[0] + text_width + 14,
-            label_y + text_height + 10,
-        )
+        background = (box[0], label_y, box[0] + text_width + 14, label_y + text_height + 10)
         draw.rectangle(background, fill=UM_MAIZE)
         draw.text((background[0] + 6, background[1] + 4), text, fill=UM_BLUE, font=font)
-
     return annotated
 
-
-def _run_inference(
-    image: Image.Image,
-    confidence: float,
-    iou: float,
-    extract_text: bool = True,
-    enhanced_ocr: bool = True,
-) -> Tuple[Image.Image, pd.DataFrame]:
+def _run_inference(image: Image.Image, confidence: float, iou: float, extract_text: bool = True) -> Tuple[Image.Image, pd.DataFrame, float]:
     model = load_model(DEFAULT_MODEL_PATH)
+    start_time = time.time()
     result = model.predict(image, conf=confidence, iou=iou, verbose=False)[0]
-    detections = _format_detections(
-        result, image=image, extract_text=extract_text, enhanced_ocr=enhanced_ocr
-    )
+    inference_time = time.time() - start_time
+    detections = _format_detections(result, image=image, extract_text=extract_text)
     annotated = _annotate_umich(image, detections)
-    return annotated, detections
+    return annotated, detections, inference_time
 
-
-def _bytes_to_image(data: bytes, filename: str = "") -> List[Image.Image]:
-    if filename.lower().endswith(".pdf"):
-        poppler_path = os.getenv("POPPLER_PATH")
-        if poppler_path:
-            images = convert_from_bytes(data, dpi=200, poppler_path=poppler_path)
-        else:
-            images = convert_from_bytes(data, dpi=200)
-        return [img.convert("RGB") for img in images]
+def _bytes_to_image(data: bytes, filename: str = "") -> Image.Image:
+    if filename.lower().endswith('.pdf'):
+        if not PDF_SUPPORT:
+            raise ImportError("PDF support requires pdf2image")
+        images = convert_from_bytes(data, first_page=1, last_page=1)
+        return images[0].convert("RGB")
     else:
-        return [Image.open(io.BytesIO(data)).convert("RGB")]
+        return Image.open(io.BytesIO(data)).convert("RGB")
 
 
 def main() -> None:
