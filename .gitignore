@@ -150,6 +150,7 @@ notebooks/*.pdf
 !architecture_1.png
 *log
 *jpg
+!src/web/demo_form.jpg
 
 # Large files
 transfer_model.tar.gz
