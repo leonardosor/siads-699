@@ -578,7 +578,7 @@ def render_landing_page(confidence: float, iou: float) -> None:
         <div class='hero-section'>
             <h1>Financial Form Text Extractor</h1>
             <p class='hero-subtitle'>University of Michigan MADS Capstone Fall 2025</p>
-            <p class='team-names'>Joey Higgins • Leonardo Cedeno • Kajal Dattatray Raut • Denesh Chandrahasan</p>
+            <p class='team-names'>Leonardo Cedeño • Joey Higgins •  Kajal Dattatray Raut • Denesh Chandrahasan</p>
         </div>
         """,
         unsafe_allow_html=True,
