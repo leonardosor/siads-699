@@ -507,7 +507,7 @@ def render_sidebar(confidence: float, iou: float, show_controls: bool = False):
                     size_mb = DEFAULT_MODEL_PATH.stat().st_size / (1024 * 1024)
                     st.markdown(f"**Status:** ✅ Loaded")
                     st.markdown(f"**Size:** {size_mb:.1f} MB")
-                    st.markdown(f"**Path:** `{DEFAULT_MODEL_PATH.name}`")
+                    #st.markdown(f"**Path:** `{DEFAULT_MODEL_PATH.name}`")
                 else:
                     st.markdown("**Status:** ❌ Not found")
             
