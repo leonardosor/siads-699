@@ -24,8 +24,6 @@ from ultralytics import YOLO
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from utils.common import find_repo_root
 
-# Fix for PyTorch 2.6+ weights_only=True default
-# Monkey-patch ultralytics to use weights_only=False for torch.load
 try:
     import ultralytics.nn.tasks as tasks_module
 

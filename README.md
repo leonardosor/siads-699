@@ -129,17 +129,13 @@ Batch OCR processing pipeline combining YOLO detection with Tesseract text extra
 ### 5. Database ([src/database/](src/database/))
 PostgreSQL schema supporting both PDF and parquet workflows, with tables for documents, OCR results, annotations, and training metadata.
 
-### 6. Testing ([tests/](tests/))
-Comprehensive test suite with unit and integration tests. Includes fixtures for common testing scenarios.
-- See [tests/README.md](tests/README.md) for testing guide
-
-### 7. Utilities ([src/utils/](src/utils/))
+### 6. Utilities ([src/utils/](src/utils/))
 - **dataset/** - Label counting, remapping, and visualization
 - **models/** - List runs, switch active models
 - **monitoring/** - Track training progress on Great Lakes
 - **deployment/** - Sync models from HPC, reset to baseline
 
-## Common Workflows
+## Workflows
 
 ### 1. Train a New Model on Great Lakes
 
