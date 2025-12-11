@@ -184,28 +184,6 @@ python src/utils/dataset/preview_yolo_labels.py --image path/to/image.jpg --labe
 # Remap incorrect labels
 python src/utils/dataset/remap_yolo_labels.py --mapping "0:1,1:2,2:0" data/input/
 ```
-
-### 4a. Fix Concatenated COCO Annotation File
-
-If a COCO export was accidentally concatenated (two full JSON objects back to back) you'll see duplicate image ids (each block starting at 0) in `results_c.txt`.
-
-Use the merge/renumber utility to produce a clean file with globally unique ids:
-
-```bash
-python src/utils/dataset/merge_and_renumber_coco.py \
-	--input data/input/ground-truth/results_c.txt \
-	--output data/input/ground-truth/results_c_fixed.json
-```
-
-The resulting `results_c_fixed.json` will:
-- Merge both objects into one valid COCO JSON
-- Assign sequential image ids (0..164 for 165 samples)
-- Reindex all annotations and remap `image_id` references
-- Preserve categories and original `file_name` values
-
-Use this cleaned file for downstream YOLO/COCO conversions or dataset analysis.
-
-
 ### 5. Database Operations
 
 ```bash
@@ -259,35 +237,6 @@ pip install -r src/environments/docker/requirements.txt
 
 # Or use Conda (for Great Lakes HPC)
 conda env create -f src/environments/conda/great-lakes-env.yml
-```
-
-## Troubleshooting
-
-### View Logs
-```bash
-# Streamlit logs
-docker compose -f src/environments/docker/compose.yml logs -f app
-
-# Database logs
-docker compose -f src/environments/docker/compose.yml logs -f db
-```
-
-### Reset Everything
-```bash
-docker compose -f src/environments/docker/compose.yml down -v
-docker compose -f src/environments/docker/compose.yml up --build -d
-```
-
-### Model Not Loading
-```bash
-# Verify model exists
-ls -la models/trained/best.pt
-
-# Check active run
-cat models/trained/active_run.txt
-
-# List available models
-python src/utils/models/list_model_runs.py
 ```
 
 ## External Resources
