@@ -1,5 +1,4 @@
 tesseract-ocr
 libtesseract-dev
 poppler-utils
-libglib2.0-0
 libgl1
